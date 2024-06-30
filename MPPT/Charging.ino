@@ -39,9 +39,10 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     voltageInputPrev = 0,
     delta = 10;
   static byte 
-    flip = 1,
+    // flip = 1,
     stepSize = 128;  
-  static unsigned long 
+  static unsigned long
+    powerInputPrev = 0,
     rawPowerPrev   = 0,
     lastTrackingTime   = 0,
     lastMpptREportTime = 0;
@@ -100,10 +101,11 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
         }                                                     // and stay in the charger on state
         else {              
           solarOff = false;                         
-          duty = 300;                                        // else if we are making more power than low solar watts figure out what the pwm
+          // duty = 300;                                        // else if we are making more power than low solar watts figure out what the pwm
           charger_state = bulk;
           startTracking = true;
-          stepSize = 16; flip = 1;
+          powerInputPrev = (unsigned long)rawCurrentIn * rawBatteryV;
+          // stepSize = 16; flip = 1;
           /* transitionFromOnToBulk = true;
           // value should be and change the charger to bulk state 
           Serial.print(batteryV); Serial.print(' ');
@@ -133,36 +135,42 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           unsigned long solarPower = (unsigned long)rawCurrentIn * rawBatteryV;
           if(mpptReached == 1 || startTracking){
             if(currentTime - lastTrackingTime > 30000 || startTracking){
-              // do perturbation
-              delta = (2 * flip - 1) * stepSize;
+               // do perturbation
+               if(solarPower>powerInputPrev && rawSolarV>voltageInputPrev)     {delta = -128;}  //  ↑P ↑V ; →MPP  //D--
+               else if(solarPower>powerInputPrev && rawSolarV<voltageInputPrev){delta = 128;}  //  ↑P ↓V ; MPP←  //D++
+               else if(solarPower<powerInputPrev && rawSolarV>voltageInputPrev){delta = +128;}  //  ↓P ↑V ; MPP→  //D++
+               else if(solarPower<powerInputPrev && rawSolarV<voltageInputPrev){delta = -128;}  //  ↓P ↓V ; ←MPP  //D--
+              // delta = (2 * flip - 1) * stepSize;
               duty += delta;
               lastTrackingTime = currentTime;
               mpptReached = 0; // ! reset MPPT
-              rawPowerPrev = solarPower;
-              voltageInputPrev = rawSolarV;
+              rawPowerPrev = solarPower;              
               startTracking = false;
             }
           }else{
-          /*  Serial.print("power before: "); Serial.print(rawPowerPrev); 
+            Serial.print("power before: "); Serial.print(rawPowerPrev); 
             Serial.print("power after: "); Serial.println(solarPower); 
             Serial.print("voltage before: "); Serial.print(voltageInputPrev); 
             Serial.print("voltage after: "); Serial.print(rawSolarV);
             Serial.print("pwm: "); Serial.print(duty); 
-            Serial.print("delta: "); Serial.println(delta); */
-            if(solarPower > rawPowerPrev){ // && rawSolarV != voltageInputPrev){   //  ↑P ↓V ↑I;  MPP←  //D++
+            Serial.print("delta: "); Serial.println(delta); 
+            if(solarPower > rawPowerPrev){
               duty += delta;
               rawPowerPrev = solarPower;
-             // voltageInputPrev = rawSolarV;
             }  
-            else if(rawBatteryV < MAX_BAT_VOLTS_RAW){                                   //  MP MV ; MPP Reached -                                           
-              flip = 1 - flip;
-              stepSize /= 2;  // varry step size
-              if(stepSize == 0) stepSize = 128;
+            else {
               duty -= delta;
-              mpptReached = 1; // ! indicate MPPT reached
-              lastMpptREportTime = currentTime;
-            } 
-            
+              delta /= 2;
+              if(delta == 0){                                   //  MP MV ; MPP Reached -                                           
+                // flip = 1 - flip;
+                // stepSize /= 2;  // varry step size
+                // if(stepSize == 0) stepSize = 128;               
+                powerInputPrev = solarPower;
+                voltageInputPrev = rawSolarV;
+                mpptReached = 1; // ! indicate MPPT reached
+                lastMpptREportTime = currentTime;
+              } 
+            }
           }                    
           set_pwm_duty();                   // set pwm duty cycle to pwm value
         }
