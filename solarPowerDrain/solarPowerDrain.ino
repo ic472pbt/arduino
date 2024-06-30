@@ -1,21 +1,22 @@
+// 21/04/2024 to be deployed
 #define INVERTOR_RELAY PB1
 #define CHARGER_RELAY PB0
 #define VOLTAGE_SENSOR PB2 
 #define INVERTOR_ON PB3 
 
-// 13.25V
-#define INVERTOR_ON_THR 9135
-// 12.15V
-#define INVERTOR_OFF_THR 8350
-// 11.73V
-#define CHARGER_ON_THR 8050
+// 13.7V <- 13.6
+#define INVERTOR_ON_THR 9411
+// 12.1V <- 12.0
+#define INVERTOR_OFF_THR 8318
+// 11.66V
+#define CHARGER_ON_THR 8000
 // 12.6V
 #define CHARGER_OFF_THR 8700
 // 5 minutes
 //#define ON_INVERTOR_MIN_TIME 5000L
 #define ON_INVERTOR_MIN_TIME 300000L
-// 5 minutes
-#define SWITCHING_DELAY 5000L
+// 120 seconds
+#define SWITCHING_DELAY 120000L
 // 30 minutes
 #define OFF_INVERTOR_MIN_TIME 1500000L
 
