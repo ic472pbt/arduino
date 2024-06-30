@@ -94,8 +94,7 @@ float
   sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
               
 bool 
-  controlFloat = false,
-  solarOff = false;
+  controlFloat = false;
 
 int 
   floatVoltageRaw = MAX_BAT_VOLTS_RAW,           // float or absorb
@@ -273,6 +272,10 @@ void Read_Sensors(unsigned long currentTime){
         catchAbsorbtion = true;
       }
     } else catchAbsorbtion = false;
+    if (charger_state == bulk && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {// If we've charged the battery above the float voltage 0.4V
+      charger_state = bat_float;
+      set_pwm_duty(true); 
+    }
   }
   
   /////////// PV SENSORS /////////////
