@@ -69,7 +69,8 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     static int off_count = OFF_NUM;
     if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
       floatVoltage = BATT_FLOAT;
-      floatVoltageRaw = BATT_FLOAT_RAW;         
+      floatVoltageRaw = BATT_FLOAT_RAW;  
+      equalizeMode = false;       
     }
 
     switch (charger_state) {
@@ -114,7 +115,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           off_count = OFF_NUM;                                // go to the charger off state
           set_pwm_duty(true); 
         }
-        else if (rawBatteryV > floatVoltageRaw + tempCompensationRaw - 25) { // float - 0.4V
+        else if ( rawBatteryV > floatVoltageRaw + tempCompensationRaw - 25) { // float - 0.4V
           controlFloat = true;                                              // else if the battery voltage has gotten above the float
           charger_state = bat_float;                          // battery float voltage go to the charger battery float state
         }

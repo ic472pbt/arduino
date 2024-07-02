@@ -93,7 +93,8 @@ float
   floatVoltage = MAX_BAT_VOLTS,           // float or absorb
   sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
               
-bool 
+bool
+  equalizeMode = true, 
   controlFloat = false;
 
 int 
@@ -263,7 +264,8 @@ void Read_Sensors(unsigned long currentTime){
         if(currentTime - catchAbsTime > 7200000ul){ // should spent at least 2h bellow ABSORPTION_START_V to rise float voltage
           absorptionAccTime = 0;
           floatVoltage = MAX_BAT_VOLTS;         
-          floatVoltageRaw = MAX_BAT_VOLTS_RAW;         
+          floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
+          equalizeMode = true;        
           catchAbsorbtion = false;
         }      
       }
@@ -272,7 +274,7 @@ void Read_Sensors(unsigned long currentTime){
         catchAbsorbtion = true;
       }
     } else catchAbsorbtion = false;
-    if (charger_state == bulk && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {// If we've charged the battery above the float voltage 0.4V
+    if (charger_state == bulk && equalizeMode && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {// If we've charged the battery above the float voltage 0.4V
       charger_state = bat_float;
       set_pwm_duty(true); 
     }
