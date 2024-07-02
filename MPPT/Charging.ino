@@ -40,7 +40,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     delta = 10;
   static byte 
     flip = 1,
-    stepSize = 128;  
+    stepSize = 8;  
   static unsigned long
     rawPowerPrev   = 0,
     lastTrackingTime   = 0,
@@ -114,7 +114,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           off_count = OFF_NUM;                                // go to the charger off state
           set_pwm_duty(true); 
         }
-        else if (batteryV > floatVoltage + tempCompensation) {
+        else if (rawBatteryV > floatVoltageRaw + tempCompensationRaw - 25) { // float - 0.4V
           controlFloat = true;                                              // else if the battery voltage has gotten above the float
           charger_state = bat_float;                          // battery float voltage go to the charger battery float state
         }
@@ -129,9 +129,9 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
         else {                                    // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
           unsigned long solarPower = (unsigned long)rawCurrentIn * rawBatteryV;
           if(mpptReached == 1 || startTracking){
-            if(currentTime - lastTrackingTime > 30000 || startTracking){
+            if(currentTime - lastTrackingTime > 29900 || startTracking){
                // do perturbation
-              stepSize = 16;
+              stepSize = 8;
               delta = (2 * flip - 1) * stepSize;
               duty += delta;
               lastTrackingTime = currentTime;

@@ -9,9 +9,9 @@ bool
 void load_on(boolean new_status) {
   if (load_status != new_status) {
     if(new_status) {
-      while(ADS.isBusy()){}
-      outCurrentOffset=ADS.readADC(CURRENT_OUT_SENSOR); // calibrate on load switch ON
-      ADS.requestADC(currentADCpin);
+      // while(ADS.isBusy()){}
+      //outCurrentOffset=ADS.readADC(CURRENT_OUT_SENSOR); // calibrate on load switch ON
+      //ADS.requestADC(currentADCpin);
       digitalWrite(LOAD, LOW);
     }
     else digitalWrite(LOAD, HIGH);
