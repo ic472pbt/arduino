@@ -94,12 +94,13 @@ float
   sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
               
 bool
-  equalizeMode = true, 
+  finishEqualize = false,
   controlFloat = false;
 
 int 
   floatVoltageRaw = MAX_BAT_VOLTS_RAW,           // float or absorb
   tempCompensationRaw   = 0,
+  powerCompensation     = 0,
   rawBatteryV           = 0,           // SYSTEM PARAMETER - 
   rawSolarV             = 0,           // SYSTEM PARAMETER - 
   rawCurrentIn          = 0,           // SYSTEM PARAMETER - 
@@ -265,8 +266,8 @@ void Read_Sensors(unsigned long currentTime){
           absorptionAccTime = 0;
           floatVoltage = MAX_BAT_VOLTS;         
           floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
-          equalizeMode = true;        
           catchAbsorbtion = false;
+          finishEqualize = catchAbsorbtion;        
         }      
       }
       else{
@@ -274,8 +275,9 @@ void Read_Sensors(unsigned long currentTime){
         catchAbsorbtion = true;
       }
     } else catchAbsorbtion = false;
-    if (charger_state == bulk && equalizeMode && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {// If we've charged the battery above the float voltage 0.4V
+    if (charger_state == bulk && !finishEqualize && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {// If we've charged the battery above the float voltage 0.4V
       charger_state = bat_float;
+      duty -= 20;
       set_pwm_duty(true); 
     }
   }
@@ -309,7 +311,7 @@ void Read_Sensors(unsigned long currentTime){
   }
   
   sol_watts = max(batteryV*currentInput, 0.0);  // ignore negative power supply current
-
+  powerCompensation = finishEqualize ? 0 : min(39, max(0, (int)((sol_watts - 60.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
 
   /////////// LOAD SENSORS /////////////
   if(currentADCpin == CURRENT_OUT_SENSOR && ADS.isReady()){
