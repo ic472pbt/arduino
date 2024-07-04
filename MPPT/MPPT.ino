@@ -394,7 +394,7 @@ void StoreHarvestingData(unsigned long currentTime){
     if(currentTime - lastSaveTime < 3600000L) return;
     lastSaveTime = currentTime;
     // Store harvest data
-    kWh += todayWh * 1.0E-3;
+    kWh += todayWh * 1.0E-3; todayWh = 0.0;
     int eeAddress = 0;
     EEPROM.put(eeAddress, kWh);
     eeAddress += sizeof(float);
@@ -419,7 +419,7 @@ void ReadHarvestingData(){
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, Ah);       if(isnan(Ah)) Ah = 0.0;  
   eeAddress += sizeof(float);
-  EEPROM.get(eeAddress, todayWh);  if(isnan(todayWh)) todayWh = 0.0;    
+  // EEPROM.get(eeAddress, todayWh);  if(isnan(todayWh)) todayWh = 0.0;    
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, todayAh);  if(isnan(todayAh)) todayAh = 0.0;    
   eeAddress += sizeof(float);

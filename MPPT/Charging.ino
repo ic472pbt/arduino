@@ -67,7 +67,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       duty=300;  
       charger_state = bat_float;
       StoreHarvestingData(currentTime);
-      todayWh = 0.0; todayAh = todayWh;
+      todayAh = todayWh;
       todayOutWh = 0.0; todayOutAh = todayWh;
     }else  return;                                 // there is error or waiting recovery
   }
@@ -148,12 +148,12 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
               startTracking = false;
             }
           }else{
-            Serial.print("power before: "); Serial.print(rawPowerPrev); 
+           /* Serial.print("power before: "); Serial.print(rawPowerPrev); 
             Serial.print("power after: "); Serial.println(solarPower); 
             Serial.print("voltage before: "); Serial.print(voltageInputPrev); 
             Serial.print("voltage after: "); Serial.print(rawSolarV);
             Serial.print("pwm: "); Serial.print(duty); 
-            Serial.print("delta: "); Serial.println(delta); 
+            Serial.print("delta: "); Serial.println(delta); */
            if(solarPower > rawPowerPrev){
                 duty += delta;
                 rawPowerPrev = solarPower;
@@ -162,8 +162,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
                 delta /= 2;
                 if(delta == 0){                                   //  MP MV ; MPP Reached -                                           
                   flip = 1 - flip;
-                  // stepSize /= 2;  // varry step size
-                  // if(stepSize == 0) stepSize = 128;               
                   mpptReached = 1; // ! indicate MPPT reached
                   lastMpptREportTime = currentTime;
                 } 
@@ -198,7 +196,8 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
             absorptionAccTime += currentTime - absorptionStartTime;
             absorptionStartTime = 0;
             charger_state = bulk;                               // switch back into bulk state to keep the voltage up
-            duty = 300;
+            flip = 1;
+            duty -= 32;
             startTracking = true;
           }
         }
