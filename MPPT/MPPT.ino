@@ -124,7 +124,6 @@ currentLoad           = 0.0,
 currentOutAbsolute     = 35.0000,      //  CALIB PARAMETER - Maximum Output Current The System Can Handle (A - Input)
 daysRunning           = 0.0000,      // SYSTEM PARAMETER - Stores the total number of days the MPPT device has been running since last powered
 todayWh               = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy today
-Wh                    = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (Watt-Hours)
 kWh                   = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (Kiliowatt-Hours)
 outWh                 = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Watt-Hours)
 todayOutWh            = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Watt-Hours)
@@ -338,9 +337,7 @@ void Read_Sensors(unsigned long currentTime){
 
     if(charger_state != off){
       float w = (sol_watts * time_span) / 3.6E+6;
-      Wh += w;  //Accumulate and compute energy harvested (3600s*(1000/interval))
       todayWh += w;  //Accumulate and compute energy harvested (3600s*(1000/interval))
-      kWh = Wh * 1.0E-3;
       float a = max(currentInput, 0.0) * time_span / 3.6E+6;
       Ah += a; todayAh += a;
     }
@@ -384,14 +381,22 @@ float load_voltage(){
   return voltage;
 }
 
+void ResetHarvestingData(){
+    int eeAddress = 0;
+    EEPROM.put(eeAddress, 0.0);
+    eeAddress += sizeof(float);
+    EEPROM.put(eeAddress, 0.0);  
+}
+
 void StoreHarvestingData(unsigned long currentTime){
     static unsigned long lastSaveTime = 0;
 
     if(currentTime - lastSaveTime < 3600000L) return;
     lastSaveTime = currentTime;
     // Store harvest data
+    kWh += todayWh * 1.0E-3;
     int eeAddress = 0;
-    EEPROM.put(eeAddress, Wh);
+    EEPROM.put(eeAddress, kWh);
     eeAddress += sizeof(float);
     EEPROM.put(eeAddress, Ah);  
     eeAddress += sizeof(float);
@@ -410,7 +415,7 @@ void StoreHarvestingData(unsigned long currentTime){
 void ReadHarvestingData(){
 // Read harvest data
   int eeAddress = 0;
-  EEPROM.get(eeAddress, Wh);       if(isnan(Wh)) Wh = 0.0;
+  EEPROM.get(eeAddress, kWh);       if(isnan(kWh)) kWh = 0.0;
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, Ah);       if(isnan(Ah)) Ah = 0.0;  
   eeAddress += sizeof(float);
@@ -454,7 +459,8 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
         Serial.print(" RT2:");        Serial.print(analogRead(RT2));    
         Serial.print(" ABS(h):");     Serial.print((absorptionAccTime + currentTime - absorptionStartTime)/3600000.0, DEC);
         Serial.print(" Float V:");    Serial.print(floatVoltage);
-        Serial.print(" TempComp V:");    Serial.print(tempCompensation);
+        Serial.print(" TCor V:");    Serial.print(tempCompensation); // temperature correction
+        Serial.print(" PCor V:");    Serial.print(powerCompensation); // power correction
     }
     else if(L=='e'){ // errors request
         Serial.print(" ERR:");   Serial.print(ERR);
@@ -471,7 +477,7 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       int eeAddress = 0;
       float value;
       EEPROM.get(eeAddress, value);
-      Serial.print(" Wh:");       Serial.print(value);       
+      Serial.print(" kWh:");       Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
       Serial.print(" Ah:");       Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
@@ -488,7 +494,6 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       Serial.print(" ToAh:");     Serial.print(value);          
     }
     else if(L == 'h'){ // harvest request
-        Serial.print(" iWh:");    Serial.print(Wh);       
         Serial.print(" kWh:");   Serial.print(kWh);       
         Serial.print(" iAh:");    Serial.print(Ah);       
         Serial.print(" TWh:");   Serial.print(todayWh);       
@@ -535,6 +540,10 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
     }
     else if(L=='s'){
       StoreHarvestingData(currentTime);
+      Serial.print("ok");
+    }
+    else if(L=='r'){ //reset harvest data
+      ResetHarvestingData();
       Serial.print("ok");
     }
     else{
