@@ -204,7 +204,7 @@ Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
   
   Device_Protection(currentTime, batteryV); 
-  int wait = charger_state == bat_float ? 5000 : 120;
+  int wait = charger_state == bat_float ? 5000 : 50;
   if(controlFloat){ wait = 0;controlFloat = false;}
   if(currentTime - mainTimestamp > wait){ // inertia delay
     Charging_Algorithm(solarV, currentTime);

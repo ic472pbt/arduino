@@ -1,5 +1,6 @@
 #define LOW_SOL_WATTS 5.00         // low bulk mode limit
 #define MIN_SOL_WATTS 1.00          // value of solar watts // this is 0.00 watts
+#define MAX_PWM_DELTA 16
 
 void set_pwm_duty(bool solarOff) {
   if(solarOff) Timer1.pwm(PWM, 0);
@@ -45,7 +46,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     delta = 10;
   static byte 
     flip = 1,
-    stepSize = 8;  
+    stepSize = MAX_PWM_DELTA;  
   static unsigned long
     rawPowerPrev   = 0,
     lastTrackingTime   = 0,
@@ -137,7 +138,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           if(mpptReached == 1 || startTracking){
             if(currentTime - lastTrackingTime > 29900 || startTracking){
                // do perturbation
-              stepSize = 8;
+              stepSize = MAX_PWM_DELTA;
               delta = (2 * flip - 1) * stepSize;
               duty += delta;
               lastTrackingTime = currentTime;
@@ -197,8 +198,8 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
             absorptionAccTime += currentTime - absorptionStartTime;
             absorptionStartTime = 0;
             charger_state = bulk;                               // switch back into bulk state to keep the voltage up
+            duty = 300;
             startTracking = true;
-            stepSize = 8; // flip = 1;
           }
         }
         break;
