@@ -67,8 +67,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       duty=300;  
       charger_state = bat_float;
       StoreHarvestingData(currentTime);
-      todayAh = todayWh;
-      todayOutWh = 0.0; todayOutAh = todayWh;
+      todayOutWh = todayWh; todayOutAh = todayWh;
     }else  return;                                 // there is error or waiting recovery
   }
   
@@ -205,14 +204,15 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       case off:                                               // when we jump into the charger off state, off_count is set with OFF_NUM
         mpptReached = 0;
         bool solarOff = true;
+        int floatV = floatVoltageRaw + tempCompensationRaw;
         if (off_count > 0) {                                  // this means that we run through the off state OFF_NUM of times with out doing
           off_count--;                                        // anything, this is to allow the battery voltage to settle down to see if the  
         }                                                     // battery has been disconnected
-        else if ((batteryV > floatVoltage + tempCompensation) && (sol_volts > batteryV)) {
+        else if ((rawBatteryV > floatV) && (sol_volts > batteryV)) {
           charger_state = bat_float;                          // if battery voltage is still high and solar volts are high
           solarOff = false;
         }    
-        else if ((batteryV > LVD) && (batteryV < floatVoltage + tempCompensation) && (sol_volts > batteryV)) {
+        else if ((batteryV > LVD) && (rawBatteryV < floatV) && (sol_volts > batteryV)) {
           charger_state = bulk;
           solarOff = false;
           duty=300;

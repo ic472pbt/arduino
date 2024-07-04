@@ -99,7 +99,7 @@ bool
 
 int 
   floatVoltageRaw = MAX_BAT_VOLTS_RAW,           // float or absorb
-  tempCompensationRaw   = 0,
+  tempCompensationRaw   = 0,           // SYSTEM PARAMETER - Voltage offset for ambient temperature
   powerCompensation     = 0,
   rawBatteryV           = 0,           // SYSTEM PARAMETER - 
   rawSolarV             = 0,           // SYSTEM PARAMETER - 
@@ -116,7 +116,6 @@ unsigned int
 float
 temperatureMax        = 90.0,          // USER PARAMETER - Overtemperature, System Shudown When Exceeded (deg C)
 temperature           = 0.0,           // SYSTEM PARAMETER -
-tempCompensation      = 0.0,           // SYSTEM PARAMETER - Voltage offset for ambient temperature
 batteryV              = 0.0000,        // SYSTEM PARAMETER - Battery voltage    
 solarV                = 0.0000,        // SYSTEM PARAMETER - PV voltage    
 currentInput          = 0.0000,        // SYSTEM PARAMETER - Current to the battery
@@ -125,10 +124,10 @@ currentOutAbsolute     = 35.0000,      //  CALIB PARAMETER - Maximum Output Curr
 daysRunning           = 0.0000,      // SYSTEM PARAMETER - Stores the total number of days the MPPT device has been running since last powered
 todayWh               = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy today
 kWh                   = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (Kiliowatt-Hours)
+hAh                   = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (hecto Amper-Hours)
 outWh                 = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Watt-Hours)
 todayOutWh            = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Watt-Hours)
 todayAh               = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy today
-Ah                    = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (Amper-Hours)
 outAh                 = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Amper-Hours)
 todayOutAh            = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Amper-Hours)
 vInSystemMin           = 10.000;       //  CALIB PARAMETER - 
@@ -229,8 +228,7 @@ unsigned int IIR(unsigned int oldValue, unsigned int newValue){
 
 void SetTempCompensation(){
   temperature = Voltage2Temp(TS);
-  tempCompensation = (25.0 - temperature) * TEMP_COMPENSATION_CF;  
-  tempCompensationRaw = (int)(tempCompensation / BAT_SENSOR_FACTOR);
+  tempCompensationRaw = (int)((25.0 - temperature) * TEMP_COMPENSATION_CF / BAT_SENSOR_FACTOR);
 }
 
 void Read_Sensors(unsigned long currentTime){
@@ -336,10 +334,8 @@ void Read_Sensors(unsigned long currentTime){
       outAh += v; todayOutAh += v;
 
     if(charger_state != off){
-      float w = (sol_watts * time_span) / 3.6E+6;
-      todayWh += w;  //Accumulate and compute energy harvested (3600s*(1000/interval))
-      float a = max(currentInput, 0.0) * time_span / 3.6E+6;
-      Ah += a; todayAh += a;
+      todayWh += (sol_watts * time_span) / 3.6E+6;  //Accumulate and compute energy harvested (3600s*(1000/interval))
+      todayAh += max(currentInput, 0.0) * time_span / 3.6E+6;
     }
     daysRunning = (timeOn * time_span) * 1.157407407407407e-8; //Compute for days running (86400s*(1000/interval))
     timeOn++;                                                          //Increment time counter
@@ -395,10 +391,11 @@ void StoreHarvestingData(unsigned long currentTime){
     lastSaveTime = currentTime;
     // Store harvest data
     kWh += todayWh * 1.0E-3; todayWh = 0.0;
+    hAh += todayAh * 1.0E-2; todayAh = 0.0;
     int eeAddress = 0;
     EEPROM.put(eeAddress, kWh);
     eeAddress += sizeof(float);
-    EEPROM.put(eeAddress, Ah);  
+    EEPROM.put(eeAddress, hAh);  
     eeAddress += sizeof(float);
     EEPROM.put(eeAddress, todayWh);  
     eeAddress += sizeof(float);
@@ -417,11 +414,11 @@ void ReadHarvestingData(){
   int eeAddress = 0;
   EEPROM.get(eeAddress, kWh);       if(isnan(kWh)) kWh = 0.0;
   eeAddress += sizeof(float);
-  EEPROM.get(eeAddress, Ah);       if(isnan(Ah)) Ah = 0.0;  
+  EEPROM.get(eeAddress, hAh);       if(isnan(hAh)) hAh = 0.0;  
   eeAddress += sizeof(float);
   // EEPROM.get(eeAddress, todayWh);  if(isnan(todayWh)) todayWh = 0.0;    
   eeAddress += sizeof(float);
-  EEPROM.get(eeAddress, todayAh);  if(isnan(todayAh)) todayAh = 0.0;    
+  // EEPROM.get(eeAddress, todayAh);  if(isnan(todayAh)) todayAh = 0.0;    
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, outWh);    if(isnan(outWh)) outWh = 0.0;
   eeAddress += sizeof(float);
@@ -459,8 +456,8 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
         Serial.print(" RT2:");        Serial.print(analogRead(RT2));    
         Serial.print(" ABS(h):");     Serial.print((absorptionAccTime + currentTime - absorptionStartTime)/3600000.0, DEC);
         Serial.print(" Float V:");    Serial.print(floatVoltage);
-        Serial.print(" TCor V:");    Serial.print(tempCompensation); // temperature correction
-        Serial.print(" PCor V:");    Serial.print(powerCompensation); // power correction
+        Serial.print(" TCor V:");    Serial.print(tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
+        Serial.print(" PCor V:");    Serial.print(powerCompensation * BAT_SENSOR_FACTOR); // power correction
     }
     else if(L=='e'){ // errors request
         Serial.print(" ERR:");   Serial.print(ERR);
@@ -479,7 +476,7 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       EEPROM.get(eeAddress, value);
       Serial.print(" kWh:");       Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
-      Serial.print(" Ah:");       Serial.print(value);       
+      Serial.print(" hAh:");      Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
       Serial.print(" TWh:");      Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
@@ -495,7 +492,7 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
     }
     else if(L == 'h'){ // harvest request
         Serial.print(" kWh:");   Serial.print(kWh);       
-        Serial.print(" iAh:");    Serial.print(Ah);       
+        Serial.print(" hAh:");   Serial.print(hAh);       
         Serial.print(" TWh:");   Serial.print(todayWh);       
         Serial.print(" TAh:");    Serial.print(todayAh);       
         Serial.print(" oWh:");    Serial.print(outWh);       
