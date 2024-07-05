@@ -9,12 +9,13 @@ bool
 void load_on(boolean new_status) {
   if (load_status != new_status) {
     if(new_status) {
-      // while(ADS.isBusy()){}
-      //outCurrentOffset=ADS.readADC(CURRENT_OUT_SENSOR); // calibrate on load switch ON
-      //ADS.requestADC(currentADCpin);
       digitalWrite(LOAD, LOW);
+      Serial.println("load on");
     }
-    else digitalWrite(LOAD, HIGH);
+    else {
+      digitalWrite(LOAD, HIGH);
+      Serial.println("load off");
+    }
     load_status = new_status;    
   }
 }

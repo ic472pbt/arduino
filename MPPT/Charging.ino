@@ -196,7 +196,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
             absorptionStartTime = 0;
             charger_state = bulk;                               // switch back into bulk state to keep the voltage up
             flip = 1;
-            duty -= 32;
             startTracking = true;
           }
         }
