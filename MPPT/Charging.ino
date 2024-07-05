@@ -158,7 +158,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
                 rawPowerPrev = solarPower;
            } else {
                 duty -= delta;
-                delta /= 2;
+                delta = delta >> 1;
                 if(delta == 0){                                   //  MP MV ; MPP Reached -                                           
                   flip = 1 - flip;
                   mpptReached = 1; // ! indicate MPPT reached
