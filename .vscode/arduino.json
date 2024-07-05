@@ -1,0 +1,7 @@
+{
+    "configuration": "cpu=atmega328",
+    "board": "arduino:avr:nano",
+    "programmer": "avrisp",
+    "sketch": "MPPT\\MPPT.ino",
+    "port": "COM5"
+}

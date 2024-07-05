@@ -147,7 +147,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
               startTracking = false;
             }
           }else{
-           /* Serial.print("power before: "); Serial.print(rawPowerPrev); 
+        /*   Serial.print("power before: "); Serial.print(rawPowerPrev); 
             Serial.print("power after: "); Serial.println(solarPower); 
             Serial.print("voltage before: "); Serial.print(voltageInputPrev); 
             Serial.print("voltage after: "); Serial.print(rawSolarV);
@@ -158,7 +158,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
                 rawPowerPrev = solarPower;
            } else {
                 duty -= delta;
-                delta = delta >> 1;
+                delta /= 2;
                 if(delta == 0){                                   //  MP MV ; MPP Reached -                                           
                   flip = 1 - flip;
                   mpptReached = 1; // ! indicate MPPT reached
