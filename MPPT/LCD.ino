@@ -76,7 +76,7 @@ void PrintOutRight(float num, valueType kind){
     for(byte n = 0; n < 3; n++){ // digits cycle
       digit = digits[LCDdigits[n]];
       for(int i = 0; i < 7; i++){ // segments cycle
-        b = n == 0 && LCDdigits[n] == 0 ? 0 : (n == 1 && LCDdigits[n] == 0 ? 0 : bitRead(digit, i));
+        b = n == 2 && LCDdigits[n] == 0 ? 0 : bitRead(digit, i);
         bitWrite(
             LCDmap[digitsPos[n][0][i]], 
             digitsPos[n][1][i], 
@@ -116,7 +116,7 @@ void PrintOutSolar(float num, valueType kind){
     for(byte n = 0; n < 3; n++){ // digits cycle
       digit = digits[LCDdigits[n]];
       for(int i = 0; i < 7; i++){ // segments cycle
-        b = n == 0 && LCDdigits[n] == 0 ? 0 : (n == 1 && LCDdigits[n] == 0 ? 0 : bitRead(digit, i));
+        b = n == 2 && LCDdigits[n] == 0 ? 0 : bitRead(digit, i);
         bitWrite(
             LCDmap[digitsPos[n+3][0][i]], 
             digitsPos[n+3][1][i], 
@@ -223,7 +223,7 @@ void LCDinfo(unsigned long currentTime){
             PrintOutSolar(sol_watts, power);
             break;
           case 4:
-            PrintOutRight(ToAh, amperHour);
+            PrintOutRight(todayOutAh, amperHour);
             PrintOutSolar(todayAh, amperHour);
             break;
         }
