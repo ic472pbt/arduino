@@ -132,7 +132,7 @@ vInSystemMin           = 10.000;       //  CALIB PARAMETER -
 
 enum button_mode {none, plus, minus, both} button_state;       // enumerated variable that holds state for buttons
 enum charger_mode {off, on, bulk, bat_float} charger_state;        // enumerated variable that holds state for charger state machine
-enum valueType {voltage, degree, amper, percent, power};      // value type LCD label right indicator
+enum valueType {voltage, degree, amper, percent, power, amperHour};      // value type LCD label right indicator
 
 void setup() {
   for(int i = 2; i < 14; i++){pinMode(i, OUTPUT);} 

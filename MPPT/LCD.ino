@@ -86,7 +86,8 @@ void PrintOutRight(float num, valueType kind){
     }
     bitWrite(LCDmap[0], 2, 1); // dot
     LCDmap[4] &= 0b1111111111100011;
-    bitWrite(LCDmap[5], 3, 0); // %
+    LCDmap[5] &= 0b1111111111110111;
+    bitWrite(LCDmap[5], 3, 0); 
     switch(kind){
       case voltage:
         LCDmap[4] |= 0b0000000000001000;
@@ -97,13 +98,17 @@ void PrintOutRight(float num, valueType kind){
       case amper:
         LCDmap[4] |= 0b0000000000010000;
         break;      
+      case amperHour:
+        bitWrite(LCDmap[5], 4, 1); // h
+        bitWrite(LCDmap[4], 4, 1); // A
+        break;      
       case percent:
-        bitWrite(LCDmap[5], 3, 1);
+        bitWrite(LCDmap[5], 3, 1); // %
         break;      
     }    
 }
 
-void PrintOutLeft(float num, valueType kind){    
+void PrintOutSolar(float num, valueType kind){        
     Number2Digits(num, kind == power ? 1.0 : 10.0);
     byte digit = 0;
     byte b = 0;
@@ -128,6 +133,10 @@ void PrintOutLeft(float num, valueType kind){
         break;   
       case amper:
         bitWrite(LCDmap[4], 0, 1);
+        break;      
+      case amperHour:
+        bitWrite(LCDmap[4], 0, 1); // A
+        bitWrite(LCDmap[5], 0, 1); // h
         break;      
       case degree:
         bitWrite(LCDmap[5], 11, 1);
@@ -158,7 +167,7 @@ void ErrorStatus(){
 }
 
 void LinkStatus(unsigned long currentTime){
-  bitWrite(LCDmap[LINK_COM], LINK_SHIFT, currentTime - lastLinkActiveTime < 1000ul);
+  bitWrite(LCDmap[LINK_COM], LINK_SHIFT, currentTime - lastLinkActiveTime < 3000ul);
 }
 
 void PrintMpptStatus(unsigned long currentTime){
@@ -195,23 +204,27 @@ void LCDinfo(unsigned long currentTime){
         SunStatus();
         ErrorStatus();  
         LinkStatus(currentTime);     
-        if(innerCycle++ % 8 == 0) LCDinfoCycle = (LCDinfoCycle + 1) % 4;        
+        if(innerCycle++ % 8 == 0) LCDinfoCycle = (LCDinfoCycle + 1) % 5;        
         switch(LCDinfoCycle){
           case 0:
             PrintOutRight(batteryV, voltage);
-            PrintOutLeft(solarV, voltage);
+            PrintOutSolar(solarV, voltage);
             break;
           case 1:
             PrintOutRight(temperature, degree);
-            PrintOutLeft(Voltage2Temp(BTS), degree);
+            PrintOutSolar(Voltage2Temp(BTS), degree);
             break;
           case 2:            
-            PrintOutRight(currentInput, amper);
-            PrintOutLeft(currentLoad, amper);
+            PrintOutRight(currentLoad, amper);
+            PrintOutSolar(currentInput, amper);
             break;
           case 3:
             PrintOutRight(duty/10.23, percent);
-            PrintOutLeft(sol_watts, power);
+            PrintOutSolar(sol_watts, power);
+            break;
+          case 4:
+            PrintOutRight(outAh, apmperHour);
+            PrintOutSolar(todayAh, apmperHour);
             break;
         }
         lcdInfoTimestamp = currentTime;
