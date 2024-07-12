@@ -14,10 +14,6 @@
 #define THERM_PULLUP_R 12000.0         // CALIB PARAMETER - pullup temp sensor's resistance. PullUp - NTC voltage divider
 #define ROUTINE_INTERVAL 250           //  USER PARAMETER - Time Interval Refresh Rate For Routine Functions (ms)
 
-
-// LCD
-#define EXCLAMATION_COM 4           // !
-#define EXCLAMATION_SHIFT 7
 #define IN_CURRENT_RECALIBRATE_INTERVAL 60000  //1 minute to recalibrate the shunt resistor
 #define INFO_REPORT_INTERVAL 3000             //20 seconds between reports
 #define COM1 2  // violet pin 3
@@ -26,9 +22,9 @@
 #define COM4 5  // brown pin 28
 #define COM5 6  // red pin 27
 #define COM6 7  // orange pin 26
-#define LCD7 8  // <-----              VACANT
-#define LP 11       // clock pin 595 
-#define CP 10       // latch pin 595 
+#define LPl 8       // latch pin 595 left register
+#define LPr 11      // latch pin 595 right register
+#define CP 10       // clock pin 595 
 #define DP 12       // data pin 595 
 #define PWM 9
 #define LOAD 13
@@ -63,7 +59,8 @@ int inCurrentOffset = CURRENT_OFFSET,
 // timers
 unsigned long lastInfoTime = 0;
 unsigned long dischargeStartTime;
-unsigned long 
+unsigned long
+lastLinkActiveTime    = 0, 
 timeOn                = 0,           //SYSTEM PARAMETER -
 rawPower              = 0,
 absorptionStartTime   = 0,           //SYSTEM PARAMETER -
@@ -73,10 +70,11 @@ absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorpti
 byte 
   currentADCpin      = 0, 
   mpptReached        = 1,
-  LCDmap[6],                 // SYSTEM LCD memory
   ERR         = 0;           // SYSTEM PARAMETER - 
            
-unsigned int duty = 0u; // current pwm level  
+unsigned int 
+  LCDmap[6],                 // LCD memory
+  duty = 0u;                 // current pwm level  
 bool
 BNC                   = 0,           // SYSTEM PARAMETER -  
 REC                   = 0,           // SYSTEM PARAMETER - 
@@ -90,7 +88,6 @@ OOC                   = 0,           // SYSTEM PARAMETER -
 OTE                   = 0;           // SYSTEM PARAMETER -
   
 float 
-  floatVoltage = MAX_BAT_VOLTS,           // float or absorb
   sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
               
 bool
@@ -135,11 +132,11 @@ vInSystemMin           = 10.000;       //  CALIB PARAMETER -
 
 enum button_mode {none, plus, minus, both} button_state;       // enumerated variable that holds state for buttons
 enum charger_mode {off, on, bulk, bat_float} charger_state;        // enumerated variable that holds state for charger state machine
-enum valueType {voltage, degree, amper, percent};      // value type LCD label right indicator
+enum valueType {voltage, degree, amper, percent, power};      // value type LCD label right indicator
 
 void setup() {
-  for(int i = 2; i < 14; i++){pinMode(i, OUTPUT);}
-  digitalWrite(LP, HIGH);
+  for(int i = 2; i < 14; i++){pinMode(i, OUTPUT);} 
+  digitalWrite(LPl, HIGH); digitalWrite(LPr, HIGH);
   analogWrite(PWM, 0);     // HIGH - toggle MOSFET ON, LOW - toggle MOSFET OFF
   //pinMode(LOAD, OUTPUT); // LOW - toggle load ON, HIGH - toggle load OFF, 21pin magenta
   pinMode(LOAD_V_SENSOR, INPUT); // high/low only 22pin red
@@ -200,9 +197,9 @@ void loop() {
 Serial.print("load: "); 
 Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
-  
+ 
   Device_Protection(currentTime, batteryV); 
-  int wait = charger_state == bat_float ? 5000 : 120;
+  int wait = charger_state == bat_float ? 5000 : 160;
   if(controlFloat){ wait = 0;controlFloat = false;}
   if(currentTime - mainTimestamp > wait){ // inertia delay
     Charging_Algorithm(solarV, currentTime);
@@ -260,8 +257,7 @@ void Read_Sensors(unsigned long currentTime){
     if(rawBatteryV < ABSORPTION_START_V_RAW) {
       if(catchAbsorbtion){
         if(currentTime - catchAbsTime > 7200000ul){ // should spent at least 2h bellow ABSORPTION_START_V to rise float voltage
-          absorptionAccTime = 0;
-          floatVoltage = MAX_BAT_VOLTS;         
+          absorptionAccTime = 0;       
           floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
           catchAbsorbtion = false;
           finishEqualize = catchAbsorbtion;        
@@ -445,9 +441,10 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
   while(Serial.available()>0)
   {
     finalize = true;
+    lastLinkActiveTime = currentTime;
     char L = Serial.read();        
     if(L=='c'){ // calibration data request      
-        Serial.print(" IN offst:");   Serial.print(inCurrentOffset);    
+        Serial.print("IN offst:");   Serial.print(inCurrentOffset);    
         Serial.print(" IN curr:");    Serial.print(rawCurrentIn + inCurrentOffset);    
         Serial.print(" OUT offst:");  Serial.print(outCurrentOffset);    
         Serial.print(" OUT curr:");   Serial.print(rawCurrentOut + outCurrentOffset);    
@@ -455,9 +452,9 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
         Serial.print(" RT1:");        Serial.print(analogRead(RT1));    
         Serial.print(" RT2:");        Serial.print(analogRead(RT2));    
         Serial.print(" ABS(h):");     Serial.print((absorptionAccTime + currentTime - absorptionStartTime)/3600000.0, DEC);
-        Serial.print(" Float V:");    Serial.print(floatVoltage);
+        Serial.print(" Float V:");    Serial.print(floatVoltageRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
-        Serial.print(" PCor V:");    Serial.print(powerCompensation * BAT_SENSOR_FACTOR); // power correction
+        Serial.print(" PCor V:");    Serial.print(-powerCompensation * BAT_SENSOR_FACTOR); // power correction
     }
     else if(L=='e'){ // errors request
         Serial.print(" ERR:");   Serial.print(ERR);
@@ -477,10 +474,10 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       Serial.print(" kWh:");       Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
       Serial.print(" hAh:");      Serial.print(value);       
-      eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
-      Serial.print(" TWh:");      Serial.print(value);       
-      eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
-      Serial.print(" TAh:");      Serial.print(value);       
+      eeAddress += sizeof(float); 
+      // EEPROM.get(eeAddress, value); Serial.print(" TWh:");      Serial.print(value);       
+      eeAddress += sizeof(float); 
+      // EEPROM.get(eeAddress, value);  Serial.print(" TAh:");      Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
       Serial.print(" oWh:");      Serial.print(value); 
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);            

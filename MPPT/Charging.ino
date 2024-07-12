@@ -73,7 +73,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
   
     static int off_count = OFF_NUM;
     if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
-      floatVoltage = BATT_FLOAT;
       floatVoltageRaw = BATT_FLOAT_RAW;  
       finishEqualize = true;
     }

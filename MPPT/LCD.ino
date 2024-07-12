@@ -2,6 +2,14 @@
 #define MS_PER_COM 2                // LCD COM duty ms
 #define INFO_CYCLE 500              // LCD info cycling interval
 
+// LCD
+#define EXCLAMATION_COM 4       // !
+#define EXCLAMATION_SHIFT 7
+#define MPPT_COM 4              // MPPT
+#define MPPT_SHIFT 9
+#define LINK_COM 3              // Link
+#define LINK_SHIFT 9
+
 
 byte
   LCDdigits[3];               // SYSTEM LCD three digits  
@@ -12,6 +20,7 @@ void LCDDrive(){ //(unsigned long currentTime){
   static bool 
     flip = false;                      // flip COM from HIGH to LOW or go next
   static byte
+    comRight   = 15,                     // LOW or HIGH controled by flip    
     comOutput  = 255,                     // LOW or HIGH controled by flip    
     currentCom  = 0;                       // LCD com pins cycling counter
     
@@ -26,26 +35,19 @@ void LCDDrive(){ //(unsigned long currentTime){
         
     } else bitWrite(PORTD, com, 0);
     flip = !flip;    
-    comOutput ^= 255;
-    // digitalWrite(com, comOutput);
-      
-      /* draw solar V good
-      byte solarVisGood = IUV == 0 ? HIGH : LOW;
-      digitalWrite(SEG1, solarVisGood ^ com5);
-
-      // draw load is ON
-      byte loadIsOn = load_status ? HIGH : LOW;
-      digitalWrite(SEG3, loadIsOn ^ com5);     */  
-
-
+    comOutput ^= 255; comRight ^= 15;
     PORTB &= ~(1 << PORTB3); // digitalWrite(LP, LOW);
-    shiftOut(DP, CP, MSBFIRST,  LCDmap[currentCom] ^ comOutput); 
-    PORTB |= (1 << PORTB3);  // digitalWrite(LP, HIGH);      
+    unsigned int data = LCDmap[currentCom];     
+    shiftOut(DP, CP, MSBFIRST, data ^ comOutput); 
+    // Set PB3 (pin LPr) HIGH and PB0 (pin LPl) LOW at the same time
+    PORTB = (PORTB & ~(1 << PORTB0)) | (1 << PORTB3);
+    shiftOut(DP, CP, MSBFIRST, (data >> 8) ^ comRight); // keep 4 MSB intact
+    PORTB |= (1 << PORTB0);
 }
 
 
-void Number2Digits(float num){
-  int intPart = (int)(num * 10.0 + 0.5); // include first decimal digit rounded
+void Number2Digits(float num, float scale){
+  int intPart = (int)(max(num, 0.0) * scale + 0.5); // include first decimal digit rounded
   for(byte i = 0; i < 3; i++){
     LCDdigits[i] = intPart % 10;
     intPart /= 10;
@@ -54,14 +56,20 @@ void Number2Digits(float num){
 
 byte
   // digit pos, COM address, bit Shift 
-  digitsPos[3][2][8] = {
-    {{2,3,2,1,1,0,0,0}, {3,3,4,4,3,3,4,7}}, // decimal part
-    {{2,3,3,2,1,0,1,0}, {1,1,2,2,1,1,2,7}},
-    {{2,3,2,1,1,0,0,0}, {6,6,5,5,6,6,5,7}}
+  digitsPos[6][2][7] = {
+    {{2,3,2,1,1,0,0}, {3,3,4,4,3,3,4}}, // decimal part right display
+    {{2,3,3,2,1,0,1}, {1,1,2,2,1,1,2}},
+    {{2,3,2,1,1,0,0}, {6,6,5,5,6,6,5}},
+    
+    {{2,3,2,1,1,0,0}, {11,11,0,0,11,11,0}}, // decimal part left display
+    {{2,3,3,2,1,0,1}, {10,10,7,7,10,10,7}},
+    {{2,3,2,1,1,0,0}, {8,8,9,9,8,8,9}}
     },
-  digits[10] ={0b01110111, 0b01000100, 0b00111110, 0b01101110, 0b01001101, 0b01101011, 0b01111011, 0b01000110, 0b01111111, 0b01101111};
+  // 0 1 2 3 4 5 6 7 8 9 E 
+  digits[11] ={0b01110111, 0b01000100, 0b00111110, 0b01101110, 0b01001101, 0b01101011, 0b01111011, 0b01000110, 0b01111111, 0b01101111, 0b00111011};
+
 void PrintOutRight(float num, valueType kind){
-    Number2Digits(num);
+    Number2Digits(num, 10.0);
     byte digit = 0;
     byte b = 0;
 
@@ -77,20 +85,52 @@ void PrintOutRight(float num, valueType kind){
       }      
     }
     bitWrite(LCDmap[0], 2, 1); // dot
-    LCDmap[4] &= 0b11100011;
+    LCDmap[4] &= 0b1111111111100011;
     bitWrite(LCDmap[5], 3, 0); // %
     switch(kind){
       case voltage:
-        LCDmap[4] |= 0b00001000;
+        LCDmap[4] |= 0b0000000000001000;
         break;
       case degree:
-        LCDmap[4] |= 0b00000100;
+        LCDmap[4] |= 0b0000000000000100;
         break;      
       case amper:
-        LCDmap[4] |= 0b00010000;
+        LCDmap[4] |= 0b0000000000010000;
         break;      
       case percent:
         bitWrite(LCDmap[5], 3, 1);
+        break;      
+    }    
+}
+
+void PrintOutLeft(float num, valueType kind){    
+    Number2Digits(num, kind == power ? 1.0 : 10.0);
+    byte digit = 0;
+    byte b = 0;
+
+    for(byte n = 0; n < 3; n++){ // digits cycle
+      digit = digits[LCDdigits[n]];
+      for(int i = 0; i < 8; i++){ // segments cycle
+        b = bitRead(digit, i);
+        bitWrite(
+            LCDmap[digitsPos[n+3][0][i]], 
+            digitsPos[n+3][1][i], 
+            b
+        );
+      }      
+    }    
+    bitWrite(LCDmap[0], 7, kind == power ? 0 : 1); // dot
+    LCDmap[4] &= 0b1111011111111110;
+    LCDmap[5] &= 0b1111000011111110;
+    switch(kind){
+      case voltage:
+        bitWrite(LCDmap[4], 11, 1);
+        break;   
+      case amper:
+        bitWrite(LCDmap[4], 0, 1);
+        break;      
+      case degree:
+        bitWrite(LCDmap[5], 11, 1);
         break;      
     }    
 }
@@ -105,10 +145,25 @@ void BatteryPercent(){
   bitWrite(LCDmap[5], 6, 1); // GEL
 }
 
+void LoadStatus(){
+  bitWrite(LCDmap[4], 10, load_status);  
+}
+
+void SunStatus(){
+  bitWrite(LCDmap[4], 8, !IUV);
+}
+
+void ErrorStatus(){
+  bitWrite(LCDmap[EXCLAMATION_COM], EXCLAMATION_SHIFT, ERR > 0);
+}
+
+void LinkStatus(unsigned long currentTime){
+  bitWrite(LCDmap[LINK_COM], LINK_SHIFT, currentTime - lastLinkActiveTime < 1000ul);
+}
+
 void PrintMpptStatus(unsigned long currentTime){
     static unsigned long lastBlink    = 0;
     static byte          blinkState   = HIGH;
-    
       switch(charger_state){
         case bat_float:
           // indicate battery is in float state
@@ -116,10 +171,10 @@ void PrintMpptStatus(unsigned long currentTime){
             blinkState = !blinkState;
             lastBlink = currentTime;
           }          
-          bitWrite(LCDmap[EXCLAMATION_COM], EXCLAMATION_SHIFT, blinkState);
+          bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, blinkState);
           break;
         case bulk:
-          bitWrite(LCDmap[EXCLAMATION_COM], EXCLAMATION_SHIFT, mpptReached); 
+          bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, mpptReached); 
           break;
         default:          
           break;
@@ -129,32 +184,34 @@ void PrintMpptStatus(unsigned long currentTime){
 void LCDinfo(unsigned long currentTime){
   static unsigned long lcdInfoTimestamp = 0;           // Last info switch timestamp
   static byte          
+    test = 0,
     innerCycle       = 0,
     LCDinfoCycle     = 0;           // cycling info on the screen counter
   
       PrintMpptStatus(currentTime);
       if(currentTime - lcdInfoTimestamp > INFO_CYCLE){
         BatteryPercent(); 
-                
-        if(innerCycle++ % 6 == 0) LCDinfoCycle = (LCDinfoCycle + 1) % 6;        
+        LoadStatus();
+        SunStatus();
+        ErrorStatus();  
+        LinkStatus(currentTime);     
+        if(innerCycle++ % 8 == 0) LCDinfoCycle = (LCDinfoCycle + 1) % 4;        
         switch(LCDinfoCycle){
           case 0:
             PrintOutRight(batteryV, voltage);
+            PrintOutLeft(solarV, voltage);
             break;
           case 1:
-            PrintOutRight(solarV, voltage);
-            break;
-          case 2:
             PrintOutRight(temperature, degree);
+            PrintOutLeft(Voltage2Temp(BTS), degree);
+            break;
+          case 2:            
+            PrintOutRight(currentInput, amper);
+            PrintOutLeft(currentLoad, amper);
             break;
           case 3:
-            PrintOutRight(Voltage2Temp(BTS), degree);
-            break;
-          case 4:
-            PrintOutRight(currentInput, amper);
-            break;
-          case 5:
             PrintOutRight(duty/10.23, percent);
+            PrintOutLeft(sol_watts, power);
             break;
         }
         lcdInfoTimestamp = currentTime;
