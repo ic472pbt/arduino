@@ -9,7 +9,10 @@
 #define MPPT_SHIFT 9
 #define LINK_COM 3              // Link
 #define LINK_SHIFT 9
-
+#define SEALED_COM 5            
+#define SEALED_SHIFT 8          // SEALED battery type
+#define LIPO_COM 5              
+#define LIPO_SHIFT 9            // LiPo battery type
 
 byte
   LCDdigits[3];               // SYSTEM LCD three digits  
@@ -151,7 +154,7 @@ void BatteryPercent(){
   bitWrite(LCDmap[4], 1, ratio > 0.50 ? 1 : 0);
   bitWrite(LCDmap[4], 5, ratio > 0.30 ? 1 : 0);
   bitWrite(LCDmap[5], 5, ratio > 0.10 ? 1 : 0);
-  bitWrite(LCDmap[5], 6, 1); // GEL
+  bitWrite(LCDmap[SEALED_COM], SEALED_SHIFT, 1); // SLD
 }
 
 void LoadStatus(){
@@ -203,8 +206,9 @@ void LCDinfo(unsigned long currentTime){
         LoadStatus();
         SunStatus();
         ErrorStatus();  
-        LinkStatus(currentTime);     
-        if(innerCycle++ % 8 == 0) LCDinfoCycle = (LCDinfoCycle + 1) % 5;        
+        LinkStatus(currentTime);
+        bitWrite(LCDmap[LIPO_COM], LIPO_SHIFT, LCDcycling); // LiPo     
+        if(LCDcycling && !(innerCycle++ % 8)) LCDinfoCycle = (LCDinfoCycle + 1) % 5;        
         switch(LCDinfoCycle){
           case 0:
             PrintOutRight(batteryV, voltage);

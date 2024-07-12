@@ -91,6 +91,7 @@ float
   sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
               
 bool
+  LCDcycling     = true,
   finishEqualize = false,
   controlFloat = false;
 
@@ -346,8 +347,9 @@ void monitor_button(){
   
     button_mode value = read_button();
     if(prevValue-curValue > 200 && value == plus){
-      duty++;
-      analogWrite(PWM,duty);
+      LCDcycling = !LCDcycling;
+      // duty++;
+      // analogWrite(PWM,duty);
     }
     if(prevValue-curValue > 200 && value == minus){
       duty--;
