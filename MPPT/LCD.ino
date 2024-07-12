@@ -75,7 +75,7 @@ void PrintOutRight(float num, valueType kind){
 
     for(byte n = 0; n < 3; n++){ // digits cycle
       digit = digits[LCDdigits[n]];
-      for(int i = 0; i < 8; i++){ // segments cycle
+      for(int i = 0; i < 7; i++){ // segments cycle
         b = bitRead(digit, i);
         bitWrite(
             LCDmap[digitsPos[n][0][i]], 
@@ -86,7 +86,7 @@ void PrintOutRight(float num, valueType kind){
     }
     bitWrite(LCDmap[0], 2, 1); // dot
     LCDmap[4] &= 0b1111111111100011;
-    LCDmap[5] &= 0b1111111111110111;
+    LCDmap[5] &= 0b1111111111100111; // reset h %
     bitWrite(LCDmap[5], 3, 0); 
     switch(kind){
       case voltage:
@@ -115,7 +115,7 @@ void PrintOutSolar(float num, valueType kind){
 
     for(byte n = 0; n < 3; n++){ // digits cycle
       digit = digits[LCDdigits[n]];
-      for(int i = 0; i < 8; i++){ // segments cycle
+      for(int i = 0; i < 7; i++){ // segments cycle
         b = bitRead(digit, i);
         bitWrite(
             LCDmap[digitsPos[n+3][0][i]], 
@@ -223,8 +223,8 @@ void LCDinfo(unsigned long currentTime){
             PrintOutSolar(sol_watts, power);
             break;
           case 4:
-            PrintOutRight(outAh, apmperHour);
-            PrintOutSolar(todayAh, apmperHour);
+            PrintOutRight(outAh, amperHour);
+            PrintOutSolar(todayAh, amperHour);
             break;
         }
         lcdInfoTimestamp = currentTime;
