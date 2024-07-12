@@ -346,15 +346,15 @@ int prevValue = 0;
 void monitor_button(){
   
     button_mode value = read_button();
-    if(prevValue-curValue > 200 && value == plus){
-      LCDcycling = !LCDcycling;
-      // duty++;
-      // analogWrite(PWM,duty);
+    if(prevValue-curValue > 200 && value == plus){      
+      duty += 2;
+      set_pwm_duty(false);
     }
     if(prevValue-curValue > 200 && value == minus){
-      duty--;
-      analogWrite(PWM,duty);
+      duty -= 2;
+      set_pwm_duty(false);
     }
+    if(prevValue-curValue > 200 && value == both) LCDcycling = !LCDcycling;
     prevValue = curValue;
 }
 

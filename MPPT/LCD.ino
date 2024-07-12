@@ -129,7 +129,7 @@ void PrintOutSolar(float num, valueType kind){
     }    
     bitWrite(LCDmap[0], 7, kind == power ? 0 : 1); // dot
     LCDmap[4] &= 0b1111011111111110;
-    LCDmap[5] &= 0b1111000011111110;
+    LCDmap[5] &= 0b1111001111111110;
     switch(kind){
       case voltage:
         bitWrite(LCDmap[4], 11, 1);
