@@ -111,7 +111,7 @@ unsigned int
 
 
 float
-temperatureMax        = 90.0,          // USER PARAMETER - Overtemperature, System Shudown When Exceeded (deg C)
+temperatureMax        = 60.0,          // USER PARAMETER - Overtemperature, System Shudown When Exceeded (deg C)
 temperature           = 0.0,           // SYSTEM PARAMETER -
 batteryV              = 0.0000,        // SYSTEM PARAMETER - Battery voltage    
 solarV                = 0.0000,        // SYSTEM PARAMETER - PV voltage    
@@ -151,7 +151,7 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
   ReadHarvestingData();
-  Timer1.initialize(25);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
+  Timer1.initialize(33);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   Timer1.pwm(PWM, 0);
   ADS.begin();
   ADS.setGain(0);
@@ -180,7 +180,7 @@ void setup() {
 
   sei(); // enable global interrupts
   
-  delay(500);
+  delay(400);
   rawBatteryV = ADS.readADC(BAT_V_SENSOR);
   rawSolarV =   ADS.readADC(SOL_V_SENSOR);
   batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
@@ -199,7 +199,7 @@ Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
  
   Device_Protection(currentTime, batteryV); 
-  int wait = charger_state == bat_float ? 5000 : 160;
+  int wait = charger_state == bat_float ? 5000 : 200;
   if(controlFloat){ wait = 0;controlFloat = false;}
   if(currentTime - mainTimestamp > wait){ // inertia delay
     Charging_Algorithm(solarV, currentTime);
