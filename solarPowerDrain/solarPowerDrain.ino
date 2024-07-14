@@ -1,4 +1,4 @@
-// 21/04/2024 to be deployed
+// 14/07/2024 to be deployed
 #define INVERTOR_RELAY PB1
 #define CHARGER_RELAY PB0
 #define VOLTAGE_SENSOR PB2 
@@ -8,12 +8,9 @@
 #define INVERTOR_ON_THR 9411
 // 12.1V <- 12.0
 #define INVERTOR_OFF_THR 8318
-// 11.66V
-#define CHARGER_ON_THR 8000
-// 12.6V
-#define CHARGER_OFF_THR 8700
+#define CHARGER_ON_THR 8550  // 12.5V
+#define CHARGER_OFF_THR 8950 // 13.0V
 // 5 minutes
-//#define ON_INVERTOR_MIN_TIME 5000L
 #define ON_INVERTOR_MIN_TIME 300000L
 // 120 seconds
 #define SWITCHING_DELAY 120000L
@@ -22,14 +19,15 @@
 
 
 //unsigned long estimatorStart = 0;
-unsigned long onInvertorStart = 0;
-unsigned long offInvertorStart = 0;
-bool invertorStarted = false;
-bool switchingDelay = false;
-bool switchingOffDelay = false;
-unsigned long delayingStart = 0;
+unsigned long 
+  onInvertorStart  = 0,
+  offInvertorStart = 0,
+  delayingStart = 0;
+bool 
+  invertorStarted = false,
+  switchingDelay  = false,
+  switchingOffDelay = false;
 char voltageLowCounter = 0;
-//bool inEstimateMode = false;
 
 
 void setup() {
@@ -41,33 +39,28 @@ void setup() {
 //  invertorStarted=true;
 //  digitalWrite(INVERTOR_ON, HIGH);
 }
+
+unsigned int IIR(unsigned int oldValue, unsigned int newValue){
+  return (unsigned int)(((unsigned long)(oldValue) * 90ul + (unsigned long)(newValue) * 10ul) / 100ul);
+}
  
 // the loop function runs over and over again forever
 void loop() {    
+    static int voltage = analogRead(VOLTAGE_SENSOR-1);  // -1 ATtiny chip specifics
     int invertorOnThr ;
-    int voltage = 0;
+    
     unsigned long currentTime = millis();
 
-    for(int i = 0; i < 10; i++) {
-      delay(300);
-      voltage += analogRead(VOLTAGE_SENSOR-1); // -1 ATtiny chip specifics
-    }
+    voltage = IIR(voltage, analogRead(VOLTAGE_SENSOR-1));
 
     if(voltage < CHARGER_ON_THR){
       PORTB |= _BV(CHARGER_RELAY);
       // digitalWrite(CHARGER_RELAY, HIGH);
     } else if(voltage > CHARGER_OFF_THR){
       PORTB &= ~_BV(CHARGER_RELAY);
-      //estimatorStart = min(currentTime, estimatorStart);
-      //inEstimateMode = true;
-      // int deltaV = CHARGER_OFF_THR - voltage; // voltage grow
-      //int deltaT = (currentTime - estimatorStart) / (31L * (CHARGER_OFF_THR - voltage)); // minutes went      
-      //invertorOnThr = deltaT  + CHARGER_OFF_THR;
-      
-      // digitalWrite(CHARGER_RELAY, LOW);
     } else   {invertorOnThr = INVERTOR_ON_THR;}
     
- /*   for(int i = 0; i < (voltage-8500) / 100;i++) {
+ /*   for(int i = 0; i < (voltage-8500) / 100;i++) { // test ADC
       delay(500);
       digitalWrite(CHARGER_RELAY, HIGH);
       delay(500);
@@ -90,7 +83,7 @@ void loop() {
           delayingStart = currentTime;
           switchingDelay = true;
         }else if(currentTime - delayingStart > SWITCHING_DELAY){
-        // 5 sec delay before power on to prevent traveling arc between relay contacts
+        // 2 mins delay before power on to prevent traveling arc between relay contacts
           PORTB |= _BV(INVERTOR_ON);
           // digitalWrite(INVERTOR_ON, HIGH);
           onInvertorStart = currentTime;
@@ -107,13 +100,12 @@ void loop() {
           delayingStart = currentTime;
           switchingOffDelay = true;
         }else if(currentTime - delayingStart > SWITCHING_DELAY){
-        // 5 sec delay before power on to prevent traveling arc between relay contacts
+        // 2 mins delay before power on to prevent traveling arc between relay contacts
           PORTB &= ~_BV(INVERTOR_RELAY);
           // digitalWrite(INVERTOR_RELAY, LOW);
           offInvertorStart = currentTime;
           invertorStarted = false;
-          switchingOffDelay = false;
+          switchingOffDelay = invertorStarted;
         }                 
     }
-    
 }
