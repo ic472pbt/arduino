@@ -257,7 +257,7 @@ void Read_Sensors(unsigned long currentTime){
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
     if(rawBatteryV < ABSORPTION_START_V_RAW) {
       if(catchAbsorbtion){
-        if(currentTime - catchAbsTime > 7200000ul){ // should spent at least 2h bellow ABSORPTION_START_V to rise float voltage
+        if(currentTime - catchAbsTime > 3600000ul){ // should spent at least 1h bellow ABSORPTION_START_V to rise float voltage
           absorptionAccTime = 0;       
           floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
           catchAbsorbtion = false;
@@ -477,9 +477,9 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
       Serial.print(" hAh:");      Serial.print(value);       
       eeAddress += sizeof(float); 
-      // EEPROM.get(eeAddress, value); Serial.print(" TWh:");      Serial.print(value);       
+      EEPROM.get(eeAddress, value); Serial.print(" TWh:");      Serial.print(value);       
       eeAddress += sizeof(float); 
-      // EEPROM.get(eeAddress, value);  Serial.print(" TAh:");      Serial.print(value);       
+      EEPROM.get(eeAddress, value);  Serial.print(" TAh:");      Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
       Serial.print(" oWh:");      Serial.print(value); 
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);            
