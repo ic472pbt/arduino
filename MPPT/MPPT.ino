@@ -119,6 +119,7 @@ solarV                = 0.0000,        // SYSTEM PARAMETER - PV voltage
 currentInput          = 0.0000,        // SYSTEM PARAMETER - Current to the battery
 currentLoad           = 0.0,
 currentOutAbsolute     = 35.0000,      //  CALIB PARAMETER - Maximum Output Current The System Can Handle (A - Input)
+totalDaysRunning      = 0.0,         // total days running
 daysRunning           = 0.0000,      // SYSTEM PARAMETER - Stores the total number of days the MPPT device has been running since last powered
 todayWh               = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy today
 kWh                   = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (Kiliowatt-Hours)
@@ -269,9 +270,10 @@ void Read_Sensors(unsigned long currentTime){
         catchAbsorbtion = true;
       }
     } else catchAbsorbtion = false;
-    if (charger_state == bulk && !finishEqualize && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {// If we've charged the battery above the float voltage 0.4V
+    // If we've charged the battery above the float voltage 0.4V
+    if (charger_state == bulk && !finishEqualize && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {
       charger_state = bat_float;
-      duty -= 20;
+      duty = 300;
       set_pwm_duty(true); 
     }
   }
@@ -377,9 +379,11 @@ float load_voltage(){
 
 void ResetHarvestingData(){
     int eeAddress = 0;
-    EEPROM.put(eeAddress, 0.0);
-    eeAddress += sizeof(float);
+    EEPROM.put(eeAddress, 0.0); // clear kWh
+    eeAddress += sizeof(float); // clear hAh
     EEPROM.put(eeAddress, 0.0);  
+    eeAddress += sizeof(float) * 7;
+    EEPROM.put(eeAddress, 0.0);  // clear total days
 }
 
 void StoreHarvestingData(unsigned long currentTime){
@@ -388,8 +392,9 @@ void StoreHarvestingData(unsigned long currentTime){
     if(currentTime - lastSaveTime < 3600000L) return;
     lastSaveTime = currentTime;
     // Store harvest data
-    kWh += todayWh * 1.0E-3; todayWh = 0.0;
-    hAh += todayAh * 1.0E-2; todayAh = 0.0;
+    kWh += todayWh * 1.0E-3; 
+    hAh += todayAh * 1.0E-2; 
+    totalDaysRunning += daysRunning;
     int eeAddress = 0;
     EEPROM.put(eeAddress, kWh);
     eeAddress += sizeof(float);
@@ -405,7 +410,12 @@ void StoreHarvestingData(unsigned long currentTime){
     eeAddress += sizeof(float);
     EEPROM.put(eeAddress, todayOutWh);  
     eeAddress += sizeof(float);
-    EEPROM.put(eeAddress, todayOutAh);      
+    EEPROM.put(eeAddress, todayOutAh);  
+    eeAddress += sizeof(float);
+    EEPROM.put(eeAddress, totalDaysRunning);  
+    todayWh = 0.0;
+    todayAh = 0.0;   
+    daysRunning = 0.0;
 }
 void ReadHarvestingData(){
 // Read harvest data
@@ -425,6 +435,8 @@ void ReadHarvestingData(){
   EEPROM.get(eeAddress, todayOutWh);if(isnan(todayOutWh)) todayOutWh = 0.0;    
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, todayOutAh);  if(isnan(todayOutAh)) todayOutAh = 0.0;    
+  eeAddress += sizeof(float);
+  EEPROM.get(eeAddress, totalDaysRunning);  if(isnan(totalDaysRunning)) totalDaysRunning = 0.0;    
 }
 
 
@@ -488,6 +500,8 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       Serial.print(" ToWh:");     Serial.print(value);   
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);    
       Serial.print(" ToAh:");     Serial.print(value);          
+      eeAddress += sizeof(float); EEPROM.get(eeAddress, value);    
+      Serial.print(" days:");     Serial.print(value);          
     }
     else if(L == 'h'){ // harvest request
         Serial.print(" kWh:");   Serial.print(kWh);       

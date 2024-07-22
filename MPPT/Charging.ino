@@ -178,7 +178,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           set_pwm_duty(true);         
         }        
         else if (rawBatteryV > floatVoltageRaw + tempCompensationRaw - powerCompensation) {                    // If we've charged the battery above the float voltage                   
-          int delta = (rawBatteryV - (floatVoltageRaw + tempCompensationRaw - powerCompensation)) / 2;
+          int delta = (rawBatteryV - (floatVoltageRaw + tempCompensationRaw - powerCompensation)) ;
           // Serial.print(batteryV);Serial.print("decrease "); Serial.println(delta);
           duty -= delta;                                      // down
           set_pwm_duty(false);                                     // write the PWM
