@@ -1,6 +1,6 @@
 #define LOW_SOL_WATTS 5.00         // low bulk mode limit
 #define MIN_SOL_WATTS 1.00          // value of solar watts // this is 0.00 watts
-#define MAX_PWM_DELTA 16
+#define MAX_PWM_DELTA 4
 
 void set_pwm_duty(bool solarOff) {
   if(solarOff) Timer1.pwm(PWM, 0);
@@ -178,7 +178,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           set_pwm_duty(true);         
         }        
         else if (rawBatteryV > floatVoltageRaw + tempCompensationRaw - powerCompensation) {                    // If we've charged the battery above the float voltage                   
-          int delta = (rawBatteryV - (floatVoltageRaw + tempCompensationRaw - powerCompensation)) ;
+          int delta = (rawBatteryV - (floatVoltageRaw + tempCompensationRaw - powerCompensation)) / 2;
           // Serial.print(batteryV);Serial.print("decrease "); Serial.println(delta);
           duty -= delta;                                      // down
           set_pwm_duty(false);                                     // write the PWM

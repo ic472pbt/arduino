@@ -378,6 +378,9 @@ float load_voltage(){
 }
 
 void ResetHarvestingData(){
+    kWh = 0.0;
+    hAh = 0.0;
+    totalDaysRunning = 0.0;
     int eeAddress = 0;
     EEPROM.put(eeAddress, 0.0); // clear kWh
     eeAddress += sizeof(float); // clear hAh
