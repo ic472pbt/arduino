@@ -1,6 +1,5 @@
 #define LVD 10.8
-#define MAX_BAT_VOLTS 14.35         // value of battery voltage
-#define MAX_BAT_VOLTS_RAW 961 // 642       // raw value of battery voltage
+#define MAX_BAT_VOLTS_RAW 961 // 642       // raw value of battery voltage 14.35  
 #define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
 #define BATT_FLOAT_RAW 924 // 617          // raw battery voltage we want to stop charging at
 #define ABSORPTION_START_V 12.6     // switch to absorption mode if bellow
@@ -270,8 +269,8 @@ void Read_Sensors(unsigned long currentTime){
         catchAbsorbtion = true;
       }
     } else catchAbsorbtion = false;
-    // If we've charged the battery above the float voltage 0.4V
-    if (charger_state == bulk && !finishEqualize && rawBatteryV > floatVoltageRaw + tempCompensationRaw + 27) {
+    // If we've charged the battery above the MAX voltage 0.4V
+    if (rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
       charger_state = bat_float;
       duty = 300;
       set_pwm_duty(true); 
@@ -380,6 +379,7 @@ float load_voltage(){
 void ResetHarvestingData(){
     kWh = 0.0;
     hAh = 0.0;
+    daysRunning = 0.0;
     totalDaysRunning = 0.0;
     int eeAddress = 0;
     EEPROM.put(eeAddress, 0.0); // clear kWh
