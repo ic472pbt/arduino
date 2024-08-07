@@ -106,6 +106,7 @@ int
   avgCountTS             = 50;        //  CALIB PARAMETER - Temperature Sensor Average Sampling Count
 
 unsigned int
+  batteryVsmooth        = 0u,        // smoothed raw battery voltage
   BTS                   = 0u,        // SYSTEM PARAMETER - Raw board temperature sensor ADC value
   TS                    = 0u;        // SYSTEM PARAMETER - Raw temperature sensor ADC value
 
@@ -181,8 +182,9 @@ void setup() {
 
   sei(); // enable global interrupts
   
-  delay(400);
+  delay(300);
   rawBatteryV = ADS.readADC(BAT_V_SENSOR);
+  batteryVsmooth = rawBatteryV;
   rawSolarV =   ADS.readADC(SOL_V_SENSOR);
   batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
   ADS.setGain(1); // 4.096V max
@@ -224,6 +226,10 @@ unsigned int IIR(unsigned int oldValue, unsigned int newValue){
   return (unsigned int)(((unsigned long)(oldValue) * 90ul + (unsigned long)(newValue) * 10ul) / 100ul);
 }
 
+unsigned int IIR2(unsigned int oldValue, unsigned int newValue){
+  return (unsigned int)(((unsigned long)(oldValue) * 996ul + (unsigned long)(newValue) * 4ul) / 1000ul);
+}
+
 void SetTempCompensation(){
   temperature = Voltage2Temp(TS);
   tempCompensationRaw = (int)((25.0 - temperature) * TEMP_COMPENSATION_CF / BAT_SENSOR_FACTOR);
@@ -254,6 +260,7 @@ void Read_Sensors(unsigned long currentTime){
     currentADCpin += 1;
     ADS.requestADC(currentADCpin); // 10ms until read is ready
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
+    batteryVsmooth = IIR2(batteryVsmooth, rawBatteryV);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
     if(rawBatteryV < ABSORPTION_START_V_RAW) {
       if(catchAbsorbtion){
@@ -531,7 +538,7 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
         Serial.println(sol_watts);
       
         Serial.print("Battery Voltage = ");
-        Serial.println(batteryV);
+        Serial.println(batteryVsmooth * BAT_SENSOR_FACTOR);
       
         Serial.print("Battery Current = "); Serial.println(batCurrent);      
         Serial.print("Load Current = ");    Serial.println(currentLoad);
