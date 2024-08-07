@@ -156,7 +156,7 @@ void setup() {
   Timer1.initialize(33);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   Timer1.pwm(PWM, 0);
   ADS.begin();
-  ADS.setGain(0);
+  ADS.setGain(1);  // 4.096V max
   BTS = analogRead(RT1);
   TS = analogRead(RT2);
   SetTempCompensation();
@@ -187,7 +187,7 @@ void setup() {
   batteryVsmooth = rawBatteryV;
   rawSolarV =   ADS.readADC(SOL_V_SENSOR);
   batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
-  ADS.setGain(1); // 4.096V max
+  // ADS.setGain(1); // 4.096V max
   ADS.requestADC(currentADCpin);
 }
 
@@ -226,7 +226,7 @@ unsigned int IIR(unsigned int oldValue, unsigned int newValue){
   return (unsigned int)(((unsigned long)(oldValue) * 90ul + (unsigned long)(newValue) * 10ul) / 100ul);
 }
 
-unsigned int IIR2(unsigned int oldValue, unsigned int newValue){
+unsigned int IIR2(unsigned int oldValue, int newValue){
   return (unsigned int)(((unsigned long)(oldValue) * 996ul + (unsigned long)(newValue) * 4ul) / 1000ul);
 }
 
@@ -261,6 +261,7 @@ void Read_Sensors(unsigned long currentTime){
     ADS.requestADC(currentADCpin); // 10ms until read is ready
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
     batteryVsmooth = IIR2(batteryVsmooth, rawBatteryV);
+    Serial.println(batteryVsmooth);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
     if(rawBatteryV < ABSORPTION_START_V_RAW) {
       if(catchAbsorbtion){
@@ -551,9 +552,9 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       
         Serial.print("pwm = ");
         if(charger_state == off)
-          Serial.println(0,DEC);
+          Serial.println(0.0);
         else
-          Serial.println(duty/10.23, DEC);
+          Serial.println(duty/10.23);
         
         Serial.print("OUT Temp = ");    Serial.println(temperature);
         Serial.print("SYS Temp = ");    Serial.print(Voltage2Temp(BTS));

@@ -223,7 +223,7 @@ void LCDinfo(unsigned long currentTime){
             PrintOutSolar(currentInput, amper);
             break;
           case 3:
-            PrintOutRight(duty/10.23, percent);
+            PrintOutRight(min(duty/10.23, 99.9), percent);
             PrintOutSolar(sol_watts, power);
             break;
           case 4:
