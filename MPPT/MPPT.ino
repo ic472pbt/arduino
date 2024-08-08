@@ -106,14 +106,14 @@ int
   avgCountTS             = 50;        //  CALIB PARAMETER - Temperature Sensor Average Sampling Count
 
 unsigned int
-  batteryVsmooth        = 0u,        // smoothed raw battery voltage
-  solarVsmooth          = 0u,        // smoothed raw PV voltage
-  batteryIsmooth        = 0u,        // smoothed raw battery current
   BTS                   = 0u,        // SYSTEM PARAMETER - Raw board temperature sensor ADC value
   TS                    = 0u;        // SYSTEM PARAMETER - Raw temperature sensor ADC value
 
 
 float
+  batteryVsmooth        = 0.0,        // smoothed battery voltage
+  solarVsmooth          = 0.0,        // smoothed PV voltage
+  batteryIsmooth        = 0.0,        // smoothed battery current
 temperatureMax        = 60.0,          // USER PARAMETER - Overtemperature, System Shudown When Exceeded (deg C)
 temperature           = 0.0,           // SYSTEM PARAMETER -
 batteryV              = 0.0000,        // SYSTEM PARAMETER - Battery voltage    
@@ -140,9 +140,9 @@ enum valueType {voltage, degree, amper, percent, power, amperHour};      // valu
 
 void setup() {
   for(int i = 2; i < 14; i++){pinMode(i, OUTPUT);} 
+  digitalWrite(LOAD, LOW); // LOW - toggle load ON, HIGH - toggle load OFF, 21pin magenta  
   digitalWrite(LPl, HIGH); digitalWrite(LPr, HIGH);
-  analogWrite(PWM, 0);     // HIGH - toggle MOSFET ON, LOW - toggle MOSFET OFF
-  //pinMode(LOAD, OUTPUT); // LOW - toggle load ON, HIGH - toggle load OFF, 21pin magenta
+  // managed by the Timer1 library analogWrite(PWM, 0);     // HIGH - toggle MOSFET ON, LOW - toggle MOSFET OFF
   pinMode(LOAD_V_SENSOR, INPUT); // high/low only 22pin red
   // pinMode(BAT_V_SENSOR, INPUT); // continuous 11pin yellow moved to ADC
   pinMode(RT1, INPUT); // temperature, 13pin blue + 595
@@ -155,7 +155,7 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
   ReadHarvestingData();
-  Timer1.initialize(33);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
+  Timer1.initialize(25);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   Timer1.pwm(PWM, 0);
   ADS.begin();
   ADS.setGain(1);  // 4.096V max
@@ -184,12 +184,12 @@ void setup() {
 
   sei(); // enable global interrupts
   
-  delay(300);
+  delay(200);
   rawBatteryV = ADS.readADC(BAT_V_SENSOR);
-  batteryVsmooth = rawBatteryV;
   rawSolarV =   ADS.readADC(SOL_V_SENSOR);
-  solarVsmooth = rawSolarV;
   batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
+  batteryVsmooth = batteryV;  
+  solarVsmooth = rawSolarV * SOL_V_SENSOR_FACTOR;
   // ADS.setGain(1); // 4.096V max
   ADS.requestADC(currentADCpin);
 }
@@ -229,8 +229,8 @@ unsigned int IIR(unsigned int oldValue, unsigned int newValue){
   return (unsigned int)(((unsigned long)(oldValue) * 90ul + (unsigned long)(newValue) * 10ul) / 100ul);
 }
 
-unsigned int IIR2(unsigned int oldValue, int newValue){
-  return (unsigned int)(((unsigned long)(oldValue) * 984ul + (unsigned long)(newValue) * 16ul) / 1000ul);
+float IIR2(float oldValue, float newValue){
+  return oldValue * 0.992 + newValue * 0.008;
 }
 
 void SetTempCompensation(){
@@ -263,7 +263,7 @@ void Read_Sensors(unsigned long currentTime){
     currentADCpin += 1;
     ADS.requestADC(currentADCpin); // 10ms until read is ready
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
-    batteryVsmooth = IIR2(batteryVsmooth, rawBatteryV);
+    batteryVsmooth = IIR2(batteryVsmooth, batteryV);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
     if(rawBatteryV < ABSORPTION_START_V_RAW) {
       if(catchAbsorbtion){
@@ -290,11 +290,11 @@ void Read_Sensors(unsigned long currentTime){
   /////////// PV SENSORS /////////////
   if(currentADCpin == SOL_V_SENSOR && ADS.isReady()){
     rawSolarV =  ADS.getValue(); // ADS.readADC(SOL_V_SENSOR);
-    solarVsmooth = IIR2(solarVsmooth, rawSolarV);
     currentADCpin += 1;
     ADS.setGain(currentGain); // read current IN
     ADS.requestADC(currentADCpin);
     solarV = rawSolarV * SOL_V_SENSOR_FACTOR;
+    solarVsmooth = IIR2(solarVsmooth, solarV);
     if(solarV + 0.5 < batteryV) {IUV=1;REC=1;}else{IUV=0;}   //IUV - INPUT UNDERVOLTAGE: Input voltage is below max battery charging voltage (for charger mode only)     
   }
   
@@ -535,14 +535,14 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       //  Serial.print("      ");
       
         Serial.print("Voltage (panel) = ");
-        Serial.println(solarVsmooth * SOL_V_SENSOR_FACTOR);
+        Serial.println(solarVsmooth);
       //  Serial.print("      ");
         
         Serial.print("Power (panel) = ");
         Serial.println(sol_watts);
       
         Serial.print("Battery Voltage = ");
-        Serial.println(batteryVsmooth * BAT_SENSOR_FACTOR);
+        Serial.println(batteryVsmooth);
       
         Serial.print("Battery Current = "); Serial.println(batCurrent);      
         Serial.print("Load Current = ");    Serial.println(currentLoad);
