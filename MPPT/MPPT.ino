@@ -107,6 +107,8 @@ int
 
 unsigned int
   batteryVsmooth        = 0u,        // smoothed raw battery voltage
+  solarVsmooth          = 0u,        // smoothed raw PV voltage
+  batteryIsmooth        = 0u,        // smoothed raw battery current
   BTS                   = 0u,        // SYSTEM PARAMETER - Raw board temperature sensor ADC value
   TS                    = 0u;        // SYSTEM PARAMETER - Raw temperature sensor ADC value
 
@@ -186,6 +188,7 @@ void setup() {
   rawBatteryV = ADS.readADC(BAT_V_SENSOR);
   batteryVsmooth = rawBatteryV;
   rawSolarV =   ADS.readADC(SOL_V_SENSOR);
+  solarVsmooth = rawSolarV;
   batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
   // ADS.setGain(1); // 4.096V max
   ADS.requestADC(currentADCpin);
@@ -227,7 +230,7 @@ unsigned int IIR(unsigned int oldValue, unsigned int newValue){
 }
 
 unsigned int IIR2(unsigned int oldValue, int newValue){
-  return (unsigned int)(((unsigned long)(oldValue) * 996ul + (unsigned long)(newValue) * 4ul) / 1000ul);
+  return (unsigned int)(((unsigned long)(oldValue) * 984ul + (unsigned long)(newValue) * 16ul) / 1000ul);
 }
 
 void SetTempCompensation(){
@@ -261,7 +264,6 @@ void Read_Sensors(unsigned long currentTime){
     ADS.requestADC(currentADCpin); // 10ms until read is ready
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
     batteryVsmooth = IIR2(batteryVsmooth, rawBatteryV);
-    Serial.println(batteryVsmooth);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
     if(rawBatteryV < ABSORPTION_START_V_RAW) {
       if(catchAbsorbtion){
@@ -288,6 +290,7 @@ void Read_Sensors(unsigned long currentTime){
   /////////// PV SENSORS /////////////
   if(currentADCpin == SOL_V_SENSOR && ADS.isReady()){
     rawSolarV =  ADS.getValue(); // ADS.readADC(SOL_V_SENSOR);
+    solarVsmooth = IIR2(solarVsmooth, rawSolarV);
     currentADCpin += 1;
     ADS.setGain(currentGain); // read current IN
     ADS.requestADC(currentADCpin);
@@ -532,7 +535,7 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
       //  Serial.print("      ");
       
         Serial.print("Voltage (panel) = ");
-        Serial.println(solarVoltage);
+        Serial.println(solarVsmooth * SOL_V_SENSOR_FACTOR);
       //  Serial.print("      ");
         
         Serial.print("Power (panel) = ");
