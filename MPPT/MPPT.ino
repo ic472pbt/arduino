@@ -211,7 +211,7 @@ delay(200);*/
     Charging_Algorithm(solarV, currentTime);
     mainTimestamp = currentTime;
   }
-  print_data(currentInput, solarV, currentTime);
+  print_data(solarV, currentTime);
   // float loadV = load_voltage();
   
   monitor_button();
@@ -225,8 +225,8 @@ float Voltage2Temp(unsigned int sensor){
   return (1.0/((51.73763267e-7 * Tlog * Tlog - 9.654661062e-4) * Tlog + 8.203940872e-3))-273.15;
 }
 
-unsigned int IIR(unsigned int oldValue, unsigned int newValue){
-  return (unsigned int)(((unsigned long)(oldValue) * 90ul + (unsigned long)(newValue) * 10ul) / 100ul);
+unsigned int IIR(unsigned int oldValue, unsigned int newValue, unsigned int alpha, unsigned int Q){
+  return (unsigned int)((alpha * (unsigned long)(oldValue) + (Q - alpha) * (unsigned long)(newValue)) / Q); // 128 = 110 + 18 -> alpha = 0.86 / 0.14
 }
 
 float IIR2(float oldValue, float newValue){
@@ -250,8 +250,8 @@ void Read_Sensors(unsigned long currentTime){
   if(currentTime - lastTempTime > 10000ul){
     //TEMPERATURE SENSORS - Lite Averaging
     
-    TS =  IIR(TS, analogRead(RT2));
-    BTS = IIR(BTS, analogRead(RT1));
+    TS =  IIR(TS, analogRead(RT2), 18, 128);
+    BTS = IIR(BTS, analogRead(RT1), 18, 128);
     SetTempCompensation();
     OTE = Voltage2Temp(BTS) > temperatureMax;  // overheating protection
     lastTempTime = currentTime;
@@ -259,7 +259,7 @@ void Read_Sensors(unsigned long currentTime){
   
   /////////// BATTERY SENSORS /////////////
   if(currentADCpin == BAT_V_SENSOR && ADS.isReady()){
-    rawBatteryV = ADS.getValue(); // ADS.readADC(BAT_V_SENSOR);
+    rawBatteryV = IIR(rawBatteryV, ADS.getValue(), 75, 100); // ADS.readADC(BAT_V_SENSOR); // cutoff 2.5Hz
     currentADCpin += 1;
     ADS.requestADC(currentADCpin); // 10ms until read is ready
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
@@ -312,6 +312,7 @@ void Read_Sensors(unsigned long currentTime){
      
       if(rawCurrentIn < 78) {currentGain = 2; inCurrentOffset = CURRENT_OFFSET;}
     }
+    batteryIsmooth = IIR2(batteryIsmooth, currentInput);
     rawPower = rawBatteryV * rawCurrentIn;
     IOC = currentInput  > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
   }
@@ -457,11 +458,10 @@ void ReadHarvestingData(){
 //------------------------------------------------------------------------------------------------------
 // This routine prints all the data out to the serial port.
 //------------------------------------------------------------------------------------------------------
-void print_data(float batCurrent, float solarVoltage, unsigned long currentTime){  
+void print_data(float solarVoltage, unsigned long currentTime){  
   if(currentTime-lastInfoTime < INFO_REPORT_INTERVAL) return; // skip the cycle
   bool finalize = false;
   bool 
-    calibration = false,
     harvest     = false,
     info        = false,
     erors       = false,
@@ -534,17 +534,14 @@ void print_data(float batCurrent, float solarVoltage, unsigned long currentTime)
         Serial.println(solarCurrent);
       //  Serial.print("      ");
       
-        Serial.print("Voltage (panel) = ");
-        Serial.println(solarVsmooth);
-      //  Serial.print("      ");
+        Serial.print("Voltage (panel) = "); Serial.println(solarVsmooth);
         
         Serial.print("Power (panel) = ");
         Serial.println(sol_watts);
       
-        Serial.print("Battery Voltage = ");
-        Serial.println(batteryVsmooth);
+        Serial.print("Battery Voltage = "); Serial.println(batteryVsmooth);
       
-        Serial.print("Battery Current = "); Serial.println(batCurrent);      
+        Serial.print("Battery Current = "); Serial.println(batteryIsmooth);      
         Serial.print("Load Current = ");    Serial.println(currentLoad);
     
         Serial.print("Charging = ");
