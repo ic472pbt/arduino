@@ -259,7 +259,7 @@ void Read_Sensors(unsigned long currentTime){
   
   /////////// BATTERY SENSORS /////////////
   if(currentADCpin == BAT_V_SENSOR && ADS.isReady()){
-    rawBatteryV = IIR(rawBatteryV, ADS.getValue(), 75, 100); // ADS.readADC(BAT_V_SENSOR); // cutoff 2.5Hz
+    rawBatteryV = ADS.getValue(); // ADS.readADC(BAT_V_SENSOR); 
     currentADCpin += 1;
     ADS.requestADC(currentADCpin); // 10ms until read is ready
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;

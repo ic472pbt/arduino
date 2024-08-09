@@ -184,10 +184,10 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           set_pwm_duty(false);                                     // write the PWM
         }
         else if (rawBatteryV < floatVoltageRaw + tempCompensationRaw - powerCompensation) {                    // else if the battery voltage is less than the float voltage - 0.1
-          int delta = 2; // (batteryV - (floatVoltage + tempCompensation - powerCompensation)) / 0.01;
+          //int delta = 2; // (batteryV - (floatVoltage + tempCompensation - powerCompensation)) / 0.01;
           // Serial.print(batteryV);Serial.print("increase "); Serial.println(delta);
-          duty += delta;                                              // up
-          set_pwm_duty(false);                                     
+          //duty += delta;                                              // up
+          //set_pwm_duty(false); // protect duty from drifting up                                     
           if (rawBatteryV < floatVoltageRaw + tempCompensationRaw - 40){ //(floatVoltage + tempCompensation - 0.6)) {               // if the voltage drops because of added load,
             absorptionAccTime += currentTime - absorptionStartTime;
             absorptionStartTime = 0;
