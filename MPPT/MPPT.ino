@@ -126,7 +126,7 @@ daysRunning           = 0.0000,      // SYSTEM PARAMETER - Stores the total numb
 todayWh               = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy today
 kWh                   = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (Kiliowatt-Hours)
 hAh                   = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy harvested (hecto Amper-Hours)
-outWh                 = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Watt-Hours)
+outkWh                = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (kWatt-Hours)
 todayOutWh            = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Watt-Hours)
 todayAh               = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy today
 outAh                 = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Amper-Hours)
@@ -135,7 +135,7 @@ vInSystemMin           = 10.000;       //  CALIB PARAMETER -
 
 
 enum button_mode {none, plus, minus, both} button_state;       // enumerated variable that holds state for buttons
-enum charger_mode {off, on, bulk, bat_float} charger_state;        // enumerated variable that holds state for charger state machine
+enum charger_mode {off, on, bulk, bat_float, scanning} charger_state;    // enumerated variable that holds state for charger state machine
 enum valueType {voltage, degree, amper, percent, power, amperHour};      // value type LCD label right indicator
 
 void setup() {
@@ -339,7 +339,7 @@ void Read_Sensors(unsigned long currentTime){
     float totalLoadCurrent = currentInput < 0 ? currentLoad - currentInput : currentLoad; // add self consumption
     
     float v = (batteryV * totalLoadCurrent * time_span) / 3.6E+6;
-      outWh += v; todayOutWh += v;
+      todayOutWh += v;
     v = totalLoadCurrent * time_span / 3.6E+6;
       outAh += v; todayOutAh += v;
 
@@ -389,15 +389,22 @@ float load_voltage(){
 }
 
 void ResetHarvestingData(){
-    kWh = 0.0;
-    hAh = 0.0;
-    daysRunning = 0.0;
-    totalDaysRunning = 0.0;
+    kWh = 0.0;         hAh = 0.0;
+    outkWh = 0.0;
+    todayWh = 0.0;     todayAh = 0.0;
+    todayOutWh = 0.0;
+    daysRunning = 0.0; totalDaysRunning = 0.0;
+    
     int eeAddress = 0;
     EEPROM.put(eeAddress, 0.0); // clear kWh
+    
     eeAddress += sizeof(float); // clear hAh
     EEPROM.put(eeAddress, 0.0);  
-    eeAddress += sizeof(float) * 7;
+    
+    eeAddress += sizeof(float) * 3; // clear outkWh
+    EEPROM.put(eeAddress, 0.0);  
+
+    eeAddress += sizeof(float) * 4;
     EEPROM.put(eeAddress, 0.0);  // clear total days
 }
 
@@ -408,6 +415,7 @@ void StoreHarvestingData(unsigned long currentTime){
     lastSaveTime = currentTime;
     // Store harvest data
     kWh += todayWh * 1.0E-3; 
+    outkWh += todayOutWh * 1.0E-3; 
     hAh += todayAh * 1.0E-2; 
     totalDaysRunning += daysRunning;
     int eeAddress = 0;
@@ -419,7 +427,7 @@ void StoreHarvestingData(unsigned long currentTime){
     eeAddress += sizeof(float);
     EEPROM.put(eeAddress, todayAh);      
     eeAddress += sizeof(float);
-    EEPROM.put(eeAddress, outWh);
+    EEPROM.put(eeAddress, outkWh);
     eeAddress += sizeof(float);
     EEPROM.put(eeAddress, outAh);  
     eeAddress += sizeof(float);
@@ -430,8 +438,10 @@ void StoreHarvestingData(unsigned long currentTime){
     EEPROM.put(eeAddress, totalDaysRunning);  
     todayWh = 0.0;
     todayAh = 0.0;   
+    todayOutWh = 0.0;
     daysRunning = 0.0;
 }
+
 void ReadHarvestingData(){
 // Read harvest data
   int eeAddress = 0;
@@ -443,11 +453,11 @@ void ReadHarvestingData(){
   eeAddress += sizeof(float);
   // EEPROM.get(eeAddress, todayAh);  if(isnan(todayAh)) todayAh = 0.0;    
   eeAddress += sizeof(float);
-  EEPROM.get(eeAddress, outWh);    if(isnan(outWh)) outWh = 0.0;
+  EEPROM.get(eeAddress, outkWh);    if(isnan(outkWh)) outkWh = 0.0;
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, outAh);    if(isnan(outAh)) outAh = 0.0;  
   eeAddress += sizeof(float);
-  EEPROM.get(eeAddress, todayOutWh);if(isnan(todayOutWh)) todayOutWh = 0.0;    
+  // EEPROM.get(eeAddress, todayOutWh);if(isnan(todayOutWh)) todayOutWh = 0.0;    
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, todayOutAh);  if(isnan(todayOutAh)) todayOutAh = 0.0;    
   eeAddress += sizeof(float);
@@ -522,7 +532,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" hAh:");   Serial.print(hAh);       
         Serial.print(" TWh:");   Serial.print(todayWh);       
         Serial.print(" TAh:");    Serial.print(todayAh);       
-        Serial.print(" oWh:");    Serial.print(outWh);       
+        Serial.print(" okWh:");    Serial.print(outkWh);       
         Serial.print(" oAh:");    Serial.print(outAh);       
         Serial.print(" ToWh:");    Serial.print(todayOutWh);       
         Serial.print(" ToAh:");    Serial.print(todayOutAh);       

@@ -1,6 +1,8 @@
 #define LOW_SOL_WATTS 5.00         // low bulk mode limit
 #define MIN_SOL_WATTS 1.00          // value of solar watts // this is 0.00 watts
 #define MAX_PWM_DELTA 4
+#define MIN_ACTIVE_DUTY 300      // minimum duty sensitive to current change
+#define SCAN_STEP 100            // rougth MPPT searching step
 
 void set_pwm_duty(bool solarOff) {
   if(solarOff) Timer1.pwm(PWM, 0);
@@ -15,7 +17,30 @@ void switchToFloat(){
   controlFloat = true;                                              // else if the battery voltage has gotten above the float
   charger_state = bat_float;                          // battery float voltage go to the charger battery float state            
 }
-  
+
+void scan(){
+  static byte cycleNum = 0;
+  static unsigned long bestPower = 0;
+  static unsigned int bestDuty = 0;
+   
+  if(cycleNum == 10){
+    cycleNum = 0;
+    bestPower = 0;
+    duty = bestDuty;
+    charger_state = bulk;
+    startTracking = true;
+  }else{
+    cycleNum++;
+    unsigned long solarPower = (unsigned long)rawCurrentIn * rawBatteryV;
+    if(solarPower > bestPower){
+      bestPower = solarPower;
+      bestDuty = duty;
+    }
+    duty += SCAN_STEP;    
+  }
+  set_pwm_duty(false);
+}
+
 //------------------------------------------------------------------------------------------------------
 // This routine is the charger state machine. It has four states on, off, bulk and float.
 // It's called once each time through the main loop to see what state the charger should be in.
@@ -63,10 +88,10 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
 //      while(ADS.isBusy()){}
 //      inCurrentOffset = ADS.readADC(CURRENT_IN_SENSOR) + 2;   // zero current offset
 //      ADS.requestADC(currentADCpin);    
-      duty=300;  
+      duty = MIN_ACTIVE_DUTY;  
       charger_state = bat_float;
       StoreHarvestingData(currentTime);
-      todayOutWh = todayWh; todayOutAh = todayWh;
+      todayOutAh = todayWh;
     }else  return;                                 // there is error or waiting recovery
   }
   
@@ -101,9 +126,9 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
         }                                                     // and stay in the charger on state
         else {              
           // else if we are making more power than low solar watts figure out what the pwm
-          charger_state = bulk;
+          charger_state = scanning;
           startTracking = true;
-          duty = 300;
+          duty = MIN_ACTIVE_DUTY;
           set_pwm_duty(false);
           // stepSize = 16; flip = 1;
           /* transitionFromOnToBulk = true;
@@ -127,8 +152,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           duty = 1023;
           // so go to charger on state
           set_pwm_duty(false);
-          /* Serial.print(sol_watts); Serial.print(' ');
-          Serial.println("go on");*/
         }
         else {                                    // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
           unsigned long solarPower = (unsigned long)rawCurrentIn * rawBatteryV;
@@ -191,7 +214,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           if (rawBatteryV < floatVoltageRaw + tempCompensationRaw - 40){ //(floatVoltage + tempCompensation - 0.6)) {               // if the voltage drops because of added load,
             absorptionAccTime += currentTime - absorptionStartTime;
             absorptionStartTime = 0;
-            charger_state = bulk;                               // switch back into bulk state to keep the voltage up
+            charger_state = scanning;                               // switch back into bulk state to keep the voltage up
             flip = 1;
             startTracking = true;
           }
@@ -209,14 +232,17 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           solarOff = false;
         }    
         else if ((batteryV > LVD) && (rawBatteryV < floatV) && (sol_volts > batteryV)) {
-          charger_state = bulk;
+          charger_state = scanning;
           solarOff = false;
-          duty=300;
+          duty = MIN_ACTIVE_DUTY;
         }
         set_pwm_duty(solarOff);
         break;
+      case scanning: 
+        scan();
+        break;
       default:
         solarOff = true;
-        break;
+        break;   
     }
 }
