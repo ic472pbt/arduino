@@ -559,7 +559,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
         else if (charger_state == on) Serial.println("on ");
         else if (charger_state == bulk) Serial.println("bulk ");
         else if (charger_state == bat_float) Serial.println("float");
-      
+        else if (charger_state == scanning) Serial.println("scan");
         Serial.print("pwm = ");
         if(charger_state == off)
           Serial.println(0.0);
