@@ -2,7 +2,7 @@
 #define MIN_SOL_WATTS 1.00          // value of solar watts // this is 0.00 watts
 #define MAX_PWM_DELTA 4
 #define MIN_ACTIVE_DUTY 300      // minimum duty sensitive to current change
-#define SCAN_STEP 100            // rougth MPPT searching step
+#define SCAN_STEP 90             // rougth MPPT searching step
 
 bool startTracking = true;
 

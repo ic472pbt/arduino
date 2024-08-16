@@ -60,7 +60,6 @@ unsigned long lastInfoTime = 0;
 unsigned long dischargeStartTime;
 unsigned long
 lastLinkActiveTime    = 0, 
-timeOn                = 0,           //SYSTEM PARAMETER -
 rawPower              = 0,
 absorptionStartTime   = 0,           //SYSTEM PARAMETER -
 absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
@@ -72,8 +71,9 @@ byte
   ERR         = 0;           // SYSTEM PARAMETER - 
            
 unsigned int 
+  timeOn             = 0,           // SYSTEM time intervals counter
   LCDmap[6],                 // LCD memory
-  duty = 0u;                 // current pwm level  
+  duty                = 0;          // pwm duty    
 bool
 BNC                   = 0,           // SYSTEM PARAMETER -  
 REC                   = 0,           // SYSTEM PARAMETER - 
@@ -129,8 +129,8 @@ hAh                   = 0.0000,      // SYSTEM PARAMETER - Stores the accumulate
 outkWh                = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (kWatt-Hours)
 todayOutWh            = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Watt-Hours)
 todayAh               = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy today
-outAh                 = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Amper-Hours)
-todayOutAh            = 0.0000,      // SYSTEM PARAMETER - Stores the accumulated energy supply (Amper-Hours)
+outhAh                 = 0.0000,     // SYSTEM PARAMETER - Energy Output total (hecto Amper-Hours)
+todayOutAh             = 0.0000,     // SYSTEM PARAMETER - Energy Output for today (Amper-Hours)
 vInSystemMin           = 10.000;       //  CALIB PARAMETER - 
 
 
@@ -338,10 +338,8 @@ void Read_Sensors(unsigned long currentTime){
     prevRoutineMillis = ct;                     //Store previous time
     float totalLoadCurrent = currentInput < 0 ? currentLoad - currentInput : currentLoad; // add self consumption
     
-    float v = (batteryV * totalLoadCurrent * time_span) / 3.6E+6;
-      todayOutWh += v;
-    v = totalLoadCurrent * time_span / 3.6E+6;
-      outAh += v; todayOutAh += v;
+    todayOutWh += (batteryV * totalLoadCurrent * time_span) / 3.6E+6;
+    todayOutAh += totalLoadCurrent * time_span / 3.6E+6;
 
     if(charger_state != off){
       todayWh += (sol_watts * time_span) / 3.6E+6;  //Accumulate and compute energy harvested (3600s*(1000/interval))
@@ -393,7 +391,7 @@ void ResetHarvestingData(){
     outkWh = 0.0;
     todayWh = 0.0;     todayAh = 0.0;
     todayOutWh = 0.0;
-    daysRunning = 0.0; totalDaysRunning = 0.0;
+    timeOn = 0; totalDaysRunning = 0.0;
     
     int eeAddress = 0;
     EEPROM.put(eeAddress, 0.0); // clear kWh
@@ -417,6 +415,7 @@ void StoreHarvestingData(unsigned long currentTime){
     kWh += todayWh * 1.0E-3; 
     outkWh += todayOutWh * 1.0E-3; 
     hAh += todayAh * 1.0E-2; 
+    outhAh += todayOutAh * 1.0E-3; 
     totalDaysRunning += daysRunning;
     int eeAddress = 0;
     EEPROM.put(eeAddress, kWh);
@@ -429,7 +428,7 @@ void StoreHarvestingData(unsigned long currentTime){
     eeAddress += sizeof(float);
     EEPROM.put(eeAddress, outkWh);
     eeAddress += sizeof(float);
-    EEPROM.put(eeAddress, outAh);  
+    EEPROM.put(eeAddress, outhAh);  
     eeAddress += sizeof(float);
     EEPROM.put(eeAddress, todayOutWh);  
     eeAddress += sizeof(float);
@@ -439,7 +438,8 @@ void StoreHarvestingData(unsigned long currentTime){
     todayWh = 0.0;
     todayAh = 0.0;   
     todayOutWh = 0.0;
-    daysRunning = 0.0;
+    todayOutAh = 0.0;
+    timeOn = 0;
 }
 
 void ReadHarvestingData(){
@@ -455,11 +455,11 @@ void ReadHarvestingData(){
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, outkWh);    if(isnan(outkWh)) outkWh = 0.0;
   eeAddress += sizeof(float);
-  EEPROM.get(eeAddress, outAh);    if(isnan(outAh)) outAh = 0.0;  
+  EEPROM.get(eeAddress, outhAh);    if(isnan(outhAh)) outhAh = 0.0;  
   eeAddress += sizeof(float);
   // EEPROM.get(eeAddress, todayOutWh);if(isnan(todayOutWh)) todayOutWh = 0.0;    
   eeAddress += sizeof(float);
-  EEPROM.get(eeAddress, todayOutAh);  if(isnan(todayOutAh)) todayOutAh = 0.0;    
+  // EEPROM.get(eeAddress, todayOutAh);  if(isnan(todayOutAh)) todayOutAh = 0.0;    
   eeAddress += sizeof(float);
   EEPROM.get(eeAddress, totalDaysRunning);  if(isnan(totalDaysRunning)) totalDaysRunning = 0.0;    
 }
@@ -528,14 +528,14 @@ void print_data(float solarVoltage, unsigned long currentTime){
       Serial.print(" days:");     Serial.print(value);          
     }
     else if(L == 'h'){ // harvest request
-        Serial.print(" kWh:");   Serial.print(kWh);       
-        Serial.print(" hAh:");   Serial.print(hAh);       
+        Serial.print(" >kWh:");   Serial.print(kWh);       
+        Serial.print(" >hAh:");   Serial.print(hAh);       
         Serial.print(" TWh:");   Serial.print(todayWh);       
         Serial.print(" TAh:");    Serial.print(todayAh);       
-        Serial.print(" okWh:");    Serial.print(outkWh);       
-        Serial.print(" oAh:");    Serial.print(outAh);       
+        Serial.print(" kWh>:");    Serial.print(outkWh);       
+        Serial.print(" hAh>:");    Serial.print(outhAh);       
         Serial.print(" ToWh:");    Serial.print(todayOutWh);       
-        Serial.print(" ToAh:");    Serial.print(todayOutAh);       
+        Serial.print(" TohAh:");    Serial.print(todayOutAh);       
         Serial.print(" Days:");  Serial.print(daysRunning);       
     }
     else if(L=='i'){ // information request        
