@@ -59,10 +59,11 @@ int inCurrentOffset = CURRENT_OFFSET,
 unsigned long lastInfoTime = 0;
 unsigned long dischargeStartTime;
 unsigned long
-lastLinkActiveTime    = 0, 
-rawPower              = 0,
-absorptionStartTime   = 0,           //SYSTEM PARAMETER -
-absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
+  timeOn,                              // SYSTEM running time counter
+  lastLinkActiveTime    = 0, 
+  rawPower              = 0,
+  absorptionStartTime   = 0,           //SYSTEM PARAMETER -
+  absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
 
 // MPPT
 byte 
@@ -71,7 +72,6 @@ byte
   ERR         = 0;           // SYSTEM PARAMETER - 
            
 unsigned int 
-  timeOn             = 0,           // SYSTEM time intervals counter
   LCDmap[6],                 // LCD memory
   duty                = 0;          // pwm duty    
 bool
@@ -345,10 +345,9 @@ void Read_Sensors(unsigned long currentTime){
       todayWh += (sol_watts * time_span) / 3.6E+6;  //Accumulate and compute energy harvested (3600s*(1000/interval))
       todayAh += max(currentInput, 0.0) * time_span / 3.6E+6;
     }
-    daysRunning = (timeOn * time_span) * 1.157407407407407e-8; //Compute for days running (86400s*(1000/interval))
-    timeOn++;                                                          //Increment time counter
+    timeOn += time_span;
+    daysRunning = timeOn * 1.1574074e-8; //Compute for days running / (86400s * 1000)                                                        //Increment time counter
   } 
-
 }  
 
 int curValue = 0;
@@ -390,7 +389,7 @@ void ResetHarvestingData(){
     kWh = 0.0;         hAh = 0.0;
     outkWh = 0.0;
     todayWh = 0.0;     todayAh = 0.0;
-    todayOutWh = 0.0;
+    todayOutWh = 0.0;  todayOutAh = 0.0;
     timeOn = 0; totalDaysRunning = 0.0;
     
     int eeAddress = 0;
@@ -401,8 +400,10 @@ void ResetHarvestingData(){
     
     eeAddress += sizeof(float) * 3; // clear outkWh
     EEPROM.put(eeAddress, 0.0);  
+    eeAddress += sizeof(float); // clear outhAh
+    EEPROM.put(eeAddress, 0.0);  
 
-    eeAddress += sizeof(float) * 4;
+    eeAddress += sizeof(float) * 3;
     EEPROM.put(eeAddress, 0.0);  // clear total days
 }
 

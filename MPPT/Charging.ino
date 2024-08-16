@@ -91,7 +91,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       duty = MIN_ACTIVE_DUTY;  
       charger_state = bat_float;
       StoreHarvestingData(currentTime);
-      todayOutAh = todayWh;
     }else  return;                                 // there is error or waiting recovery
   }
   
