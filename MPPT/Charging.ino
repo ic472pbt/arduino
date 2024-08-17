@@ -123,6 +123,10 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     }
 
     switch (charger_state) {
+      case off:                                               // when we jump into the charger off state, off_count is set with OFF_NUM
+        offHandle(sol_volts);
+        break;
+
       case on:                                    
         mpptReached = 0;
         if (solarV + 0.2 < batteryV) {                      // if watts input from the solar panel is less than
@@ -244,12 +248,9 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           }
         }
         break;
-      case off:                                               // when we jump into the charger off state, off_count is set with OFF_NUM
-        offHandle(sol_volts);
-        break;
       case scanning: 
         scan();
-        break;
+        break;        
       default:
         break;   
     }
