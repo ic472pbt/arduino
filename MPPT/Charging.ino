@@ -5,6 +5,8 @@
 #define SCAN_STEP 90             // rougth MPPT searching step
 
 bool startTracking = true;
+unsigned int mpptDuty;           // store pwm duty at mppt point to limit in float mode
+byte off_count = OFF_NUM;
 
 void set_pwm_duty(bool solarOff) {
   if(solarOff) Timer1.pwm(PWM, 0);
@@ -16,7 +18,8 @@ void set_pwm_duty(bool solarOff) {
 } 
 
 void switchToFloat(){
-  controlFloat = true;                                              // else if the battery voltage has gotten above the float
+  mpptDuty = duty;
+  controlFloat = true;                                // else if the battery voltage has gotten above the float
   charger_state = bat_float;                          // battery float voltage go to the charger battery float state            
 }
 
@@ -43,6 +46,28 @@ void scan(){
   set_pwm_duty(false);
 }
 
+//  Off State - This is state that the charger enters when solar watts < MIN_SOL_WATTS. The charger goes into this
+//      off in this state so that power from the battery doesn't leak back into the solar panel. 
+void offHandle(float sol_volts){
+  bool solarOff = true;
+  int floatV = floatVoltageRaw + tempCompensationRaw;
+
+  mpptReached = 0;
+        if (off_count > 0) {                                  // this means that we run through the off state OFF_NUM of times with out doing
+          off_count--;                                        // anything, this is to allow the battery voltage to settle down to see if the  
+        }                                                     // battery has been disconnected
+        else if ((rawBatteryV > floatV) && (sol_volts > batteryV)) {
+          charger_state = bat_float;                          // if battery voltage is still high and solar volts are high
+          solarOff = false;
+        }    
+        else if ((batteryV > LVD) && (rawBatteryV < floatV) && (sol_volts > batteryV)) {
+          charger_state = scanning;
+          solarOff = false;
+          duty = MIN_ACTIVE_DUTY;
+        }
+        set_pwm_duty(solarOff);  
+}
+
 //------------------------------------------------------------------------------------------------------
 // This routine is the charger state machine. It has four states on, off, bulk and float.
 // It's called once each time through the main loop to see what state the charger should be in.
@@ -62,8 +87,6 @@ void scan(){
 //      voltage at MAX_BAT_VOLTS which probably means the battery is being drawn down by some load so we need to back
 //      into the bulk charging mode.
 
-//  Off State - This is state that the charger enters when solar watts < MIN_SOL_WATTS. The charger goes into this
-//      off in this state so that power from the battery doesn't leak back into the solar panel. 
 //------------------------------------------------------------------------------------------------------
 void Charging_Algorithm(float sol_volts, unsigned long currentTime) { 
   static int 
@@ -94,7 +117,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     }else  return;                                 // there is error or waiting recovery
   }
   
-    static int off_count = OFF_NUM;
     if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
       floatVoltageRaw = BATT_FLOAT_RAW;  
       finishEqualize = true;
@@ -209,9 +231,9 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
         else if (rawBatteryV <= effectiveBound) {                    // else if the battery voltage is less than the float voltage - 0.1
           //int delta = 2; // (batteryV - (floatVoltage + tempCompensation - powerCompensation)) / 0.01;
           // Serial.print(batteryV);Serial.print("increase "); Serial.println(delta);
-          if(rawBatteryV < effectiveBound - 10){
+          if(duty < mpptDuty){   // protect duty from drifting up
             duty += 2;                                              // up
-            set_pwm_duty(false); // protect duty from drifting up                                     
+            set_pwm_duty(false);                                      
           }
           if (rawBatteryV < floatVoltageRaw + tempCompensationRaw - 40){ //(floatVoltage + tempCompensation - 0.6)) {               // if the voltage drops because of added load,
             absorptionAccTime += currentTime - absorptionStartTime;
@@ -223,28 +245,12 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
         }
         break;
       case off:                                               // when we jump into the charger off state, off_count is set with OFF_NUM
-        mpptReached = 0;
-        bool solarOff = true;
-        int floatV = floatVoltageRaw + tempCompensationRaw;
-        if (off_count > 0) {                                  // this means that we run through the off state OFF_NUM of times with out doing
-          off_count--;                                        // anything, this is to allow the battery voltage to settle down to see if the  
-        }                                                     // battery has been disconnected
-        else if ((rawBatteryV > floatV) && (sol_volts > batteryV)) {
-          charger_state = bat_float;                          // if battery voltage is still high and solar volts are high
-          solarOff = false;
-        }    
-        else if ((batteryV > LVD) && (rawBatteryV < floatV) && (sol_volts > batteryV)) {
-          charger_state = scanning;
-          solarOff = false;
-          duty = MIN_ACTIVE_DUTY;
-        }
-        set_pwm_duty(solarOff);
+        offHandle(sol_volts);
         break;
       case scanning: 
         scan();
         break;
       default:
-        solarOff = true;
         break;   
     }
 }

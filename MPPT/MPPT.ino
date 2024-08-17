@@ -184,7 +184,7 @@ void setup() {
 
   sei(); // enable global interrupts
   
-  delay(200);
+  delay(100);
   rawBatteryV = ADS.readADC(BAT_V_SENSOR);
   rawSolarV =   ADS.readADC(SOL_V_SENSOR);
   batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
