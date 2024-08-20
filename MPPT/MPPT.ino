@@ -73,7 +73,8 @@ byte
            
 unsigned int 
   LCDmap[6],                 // LCD memory
-  duty                = 0;          // pwm duty    
+  mpptDuty,                  // store pwm duty at mppt point to limit in float mode
+  duty;                      // pwm duty    
 bool
 BNC                   = 0,           // SYSTEM PARAMETER -  
 REC                   = 0,           // SYSTEM PARAMETER - 
@@ -184,7 +185,7 @@ void setup() {
 
   sei(); // enable global interrupts
   
-  delay(100);
+  // delay(100);
   rawBatteryV = ADS.readADC(BAT_V_SENSOR);
   rawSolarV =   ADS.readADC(SOL_V_SENSOR);
   batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
@@ -265,9 +266,9 @@ void Read_Sensors(unsigned long currentTime){
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
     batteryVsmooth = IIR2(batteryVsmooth, batteryV);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
-    if(rawBatteryV < ABSORPTION_START_V_RAW) {
+    if(batteryVsmooth < ABSORPTION_START_V) {
       if(catchAbsorbtion){
-        if(currentTime - catchAbsTime > 3600000ul){ // should spent at least 1h bellow ABSORPTION_START_V to rise float voltage
+        if(currentTime - catchAbsTime > 3600000ul){ // should spent at least 1h bellow ABSORPTION_START_V to rise up float voltage
           absorptionAccTime = 0;       
           floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
           catchAbsorbtion = false;
@@ -318,7 +319,7 @@ void Read_Sensors(unsigned long currentTime){
   }
   
   sol_watts = max(batteryV*currentInput, 0.0);  // ignore negative power supply current
-  powerCompensation = finishEqualize ? 0 : min(39, max(0, (int)((sol_watts - 60.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
+  powerCompensation = finishEqualize ? 0 : min(39, max(0, (int)(0.5 * (sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
 
   /////////// LOAD SENSORS /////////////
   if(currentADCpin == CURRENT_OUT_SENSOR && ADS.isReady()){
@@ -416,7 +417,7 @@ void StoreHarvestingData(unsigned long currentTime){
     kWh += todayWh * 1.0E-3; 
     outkWh += todayOutWh * 1.0E-3; 
     hAh += todayAh * 1.0E-2; 
-    outhAh += todayOutAh * 1.0E-3; 
+    outhAh += todayOutAh * 1.0E-2; 
     totalDaysRunning += daysRunning;
     int eeAddress = 0;
     EEPROM.put(eeAddress, kWh);
@@ -483,7 +484,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
     lastLinkActiveTime = currentTime;
     char L = Serial.read();        
     if(L=='c'){ // calibration data request      
-        Serial.print("IN offst:");   Serial.print(inCurrentOffset);    
+        Serial.print(" mDuty:");      Serial.print(mpptDuty);    
         Serial.print(" IN curr:");    Serial.print(rawCurrentIn + inCurrentOffset);    
         Serial.print(" OUT offst:");  Serial.print(outCurrentOffset);    
         Serial.print(" OUT curr:");   Serial.print(rawCurrentOut + outCurrentOffset);    
