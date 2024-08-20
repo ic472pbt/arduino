@@ -5,7 +5,6 @@
 #define SCAN_STEP 90             // rougth MPPT searching step
 
 bool startTracking = true;
-unsigned int mpptDuty;           // store pwm duty at mppt point to limit in float mode
 byte off_count = OFF_NUM;
 
 void set_pwm_duty(bool solarOff) {
