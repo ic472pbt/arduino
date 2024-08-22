@@ -74,6 +74,7 @@ byte
 unsigned int 
   LCDmap[6],                 // LCD memory
   mpptDuty,                  // store pwm duty at mppt point to limit in float mode
+  storeDuty,                 // store pwm duty for smoothing
   duty;                      // pwm duty    
 bool
 BNC                   = 0,           // SYSTEM PARAMETER -  
@@ -227,7 +228,9 @@ float Voltage2Temp(unsigned int sensor){
 }
 
 unsigned int IIR(unsigned int oldValue, unsigned int newValue, unsigned int alpha, unsigned int Q){
-  return (unsigned int)((alpha * (unsigned long)(oldValue) + (Q - alpha) * (unsigned long)(newValue)) / Q); // 128 = 110 + 18 -> alpha = 0.86 / 0.14
+  // 128 = 110 + 18 -> alpha = 0.86 / 0.14
+  // 128 = 92 + 36 -> alpha = 0.72 / 0.28
+  return (unsigned int)((alpha * (unsigned long)(oldValue) + (Q - alpha) * (unsigned long)(newValue)) / Q); 
 }
 
 float IIR2(float oldValue, float newValue){
@@ -251,7 +254,7 @@ void Read_Sensors(unsigned long currentTime){
   if(currentTime - lastTempTime > 10000ul){
     //TEMPERATURE SENSORS - Lite Averaging
     
-    TS =  IIR(TS, analogRead(RT2), 18, 128);
+    TS =  IIR(TS, analogRead(RT2), 36, 128);
     BTS = IIR(BTS, analogRead(RT1), 18, 128);
     SetTempCompensation();
     OTE = Voltage2Temp(BTS) > temperatureMax;  // overheating protection
@@ -511,17 +514,17 @@ void print_data(float solarVoltage, unsigned long currentTime){
       int eeAddress = 0;
       float value;
       EEPROM.get(eeAddress, value);
-      Serial.print(" kWh:");       Serial.print(value);       
+      Serial.print(" >kWh:");       Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
-      Serial.print(" hAh:");      Serial.print(value);       
+      Serial.print(" >hAh:");      Serial.print(value);       
       eeAddress += sizeof(float); 
       EEPROM.get(eeAddress, value); Serial.print(" TWh:");      Serial.print(value);       
       eeAddress += sizeof(float); 
       EEPROM.get(eeAddress, value);  Serial.print(" TAh:");      Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);
-      Serial.print(" oWh:");      Serial.print(value); 
+      Serial.print(" kWh>:");      Serial.print(value); 
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);            
-      Serial.print(" oAh:");      Serial.print(value);       
+      Serial.print(" hAh>:");      Serial.print(value);       
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);   
       Serial.print(" ToWh:");     Serial.print(value);   
       eeAddress += sizeof(float); EEPROM.get(eeAddress, value);    
