@@ -121,8 +121,13 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       finishEqualize = true;
     }
 
-    switch (charger_state) {
-      case on:                                    
+    if(charger_state==off){                               // when we jump into the charger off state, off_count is set with OFF_NUM
+        offHandle(sol_volts);
+    }
+    else if(charger_state==scanning){
+        scan();
+    } 
+    else if(charger_state==on){                              
         mpptReached = 0;
         if (solarV + 0.2 < batteryV) {                      // if watts input from the solar panel is less than
           charger_state = off;                                // the minimum solar watts then 
@@ -156,8 +161,8 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           Serial.print(batteryV); Serial.print(' ');
           Serial.println("go bulk");*/
         }
-        break;      
-      case bulk:        
+    }      
+    else if (charger_state==bulk){       
         if (solarV + 0.2 < batteryV) {                        // if watts input from the solar panel is less than
           charger_state = off;                                // the minimum solar watts then it is getting dark so
           off_count = OFF_NUM;                                // go to the charger off state
@@ -210,8 +215,8 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           }                    
           set_pwm_duty(false);                   // set pwm duty cycle to pwm value
         }
-        break;
-      case bat_float:  
+    }
+    else if (charger_state == bat_float){  
         int effectiveBound = floatVoltageRaw + tempCompensationRaw - powerCompensation;
         mpptReached = 0;
         if(rawBatteryV > floatVoltageRaw + tempCompensationRaw - 25){
@@ -244,14 +249,8 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
             startTracking = true;
           }
         }
-        break;
-      case off:                                               // when we jump into the charger off state, off_count is set with OFF_NUM
-        offHandle(sol_volts);
-        break;
-      case scanning: 
-        scan();
-        break;
-      default:
-        break;   
-    }
+    }      
+    else{
+        
+    }   
 }
