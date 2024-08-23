@@ -154,6 +154,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           charger_state = scanning;
           startTracking = true;
           duty = MIN_ACTIVE_DUTY;
+          storeDuty = duty;
           set_pwm_duty(false);
           // stepSize = 16; flip = 1;
           /* transitionFromOnToBulk = true;
@@ -207,7 +208,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
                 duty -= delta;
                 delta /= 2;
                 if(delta == 0){                           //  MP MV ; MPP Reached -                                           
-                  duty = IIR(storeDuty, duty, 18, 128);   // smooth duty value a bit
+                  duty = IIR(storeDuty, duty, 36, 128);   // smooth duty value a bit
                   flip = 1 - flip;
                   mpptReached = 1; // ! indicate MPPT reached
                 } 
