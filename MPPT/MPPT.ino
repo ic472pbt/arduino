@@ -157,7 +157,7 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
   ReadHarvestingData();
-  Timer1.initialize(25);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
+  Timer1.initialize(40);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   Timer1.pwm(PWM, 0);
   ADS.begin();
   ADS.setGain(1);  // 4.096V max
@@ -254,7 +254,7 @@ void Read_Sensors(unsigned long currentTime){
   if(currentTime - lastTempTime > 10000ul){
     //TEMPERATURE SENSORS - Lite Averaging
     
-    TS =  IIR(TS, analogRead(RT2), 36, 128);
+    TS =  IIR(TS, analogRead(RT2), 64, 128);
     BTS = IIR(BTS, analogRead(RT1), 18, 128);
     SetTempCompensation();
     OTE = Voltage2Temp(BTS) > temperatureMax;  // overheating protection
@@ -269,20 +269,23 @@ void Read_Sensors(unsigned long currentTime){
     batteryV = rawBatteryV * BAT_SENSOR_FACTOR;
     batteryVsmooth = IIR2(batteryVsmooth, batteryV);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
-    if(batteryVsmooth < ABSORPTION_START_V) {
-      if(catchAbsorbtion){
-        if(currentTime - catchAbsTime > 3600000ul){ // should spent at least 1h bellow ABSORPTION_START_V to rise up float voltage
+
+// TO remove this block
+//    if(batteryVsmooth < ABSORPTION_START_V) {
+//      if(catchAbsorbtion){
+/*        if(currentTime - catchAbsTime > 3600000ul){ // should spent at least 1h bellow ABSORPTION_START_V to rise up float voltage
           absorptionAccTime = 0;       
           floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
           catchAbsorbtion = false;
           finishEqualize = catchAbsorbtion;        
-        }      
-      }
-      else{
-        catchAbsTime = currentTime;
-        catchAbsorbtion = true;
-      }
-    } else catchAbsorbtion = false;
+        }*/      
+  //    }
+      //if(!catchAbsorbtion){
+      //  catchAbsTime = currentTime;
+        //catchAbsorbtion = true;
+      //}
+//    } else catchAbsorbtion = false;
+
     // If we've charged the battery above the MAX voltage 0.4V
     if (rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
       charger_state = bat_float;
