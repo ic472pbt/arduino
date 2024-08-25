@@ -115,6 +115,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       StoreHarvestingData(currentTime);
       // allow absorbtion
       absorptionAccTime = 0;       
+      absorptionStartTime = 0;
       floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
       finishEqualize = false; 
     }else  return;                                 // there is error or waiting recovery

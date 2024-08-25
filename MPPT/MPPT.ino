@@ -254,7 +254,7 @@ void Read_Sensors(unsigned long currentTime){
   if(currentTime - lastTempTime > 10000ul){
     //TEMPERATURE SENSORS - Lite Averaging
     
-    TS =  IIR(TS, analogRead(RT2), 64, 128);
+    TS =  IIR(TS, analogRead(RT2), 100, 128);
     BTS = IIR(BTS, analogRead(RT1), 18, 128);
     SetTempCompensation();
     OTE = Voltage2Temp(BTS) > temperatureMax;  // overheating protection
@@ -497,7 +497,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" PWM:");        Serial.print(duty);
         Serial.print(" RT1:");        Serial.print(analogRead(RT1));    
         Serial.print(" RT2:");        Serial.print(analogRead(RT2));    
-        Serial.print(" ABS(h):");     Serial.print((absorptionAccTime + currentTime - absorptionStartTime)/3600000.0, DEC);
+        Serial.print(" ABS(h):");     Serial.print(absorptionAccTime/3600000.0);
         Serial.print(" Float V:");    Serial.print(floatVoltageRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
         Serial.print(" PCor V:");    Serial.print(-powerCompensation * BAT_SENSOR_FACTOR); // power correction
