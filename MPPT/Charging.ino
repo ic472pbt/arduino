@@ -1,8 +1,9 @@
 #define LOW_SOL_WATTS 5.00         // low bulk mode limit
 #define MIN_SOL_WATTS 1.00          // value of solar watts // this is 0.00 watts
 #define MAX_PWM_DELTA 4
-#define MIN_ACTIVE_DUTY 300      // minimum duty sensitive to current change
-#define SCAN_STEP 90             // rougth MPPT searching step
+#define MIN_ACTIVE_DUTY 300              // minimum duty sensitive to current change
+#define SCAN_STEP 90                     // rough MPPT searching step
+#define ABSORPTION_TIME_LIMIT 14400000L  // max 4h of topping up per day
 
 bool startTracking = true;
 byte off_count = OFF_NUM;

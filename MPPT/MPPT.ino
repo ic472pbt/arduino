@@ -8,7 +8,6 @@
 #define CURRENT_OFFSET 382 
 #define OFF_NUM 9                   // number of iterations of off charger state
 #define SELF_CONSUMPTION 0.045      // static loss (A)
-#define ABSORPTION_TIME_LIMIT 7200000L  // 2h
 #define TEMP_COMPENSATION_CF 0.024     // V / 12V / degC / cp = 25deg
 #define THERM_PULLUP_R 12000.0         // CALIB PARAMETER - pullup temp sensor's resistance. PullUp - NTC voltage divider
 #define ROUTINE_INTERVAL 250           //  USER PARAMETER - Time Interval Refresh Rate For Routine Functions (ms)
