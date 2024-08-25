@@ -253,7 +253,7 @@ void Read_Sensors(unsigned long currentTime){
   if(currentTime - lastTempTime > 10000ul){
     //TEMPERATURE SENSORS - Lite Averaging
     
-    TS =  IIR(TS, analogRead(RT2), 100, 128);
+    TS =  IIR(TS, analogRead(RT2), 110, 128);
     BTS = IIR(BTS, analogRead(RT1), 18, 128);
     SetTempCompensation();
     OTE = Voltage2Temp(BTS) > temperatureMax;  // overheating protection
