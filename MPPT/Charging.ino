@@ -119,7 +119,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
       finishEqualize = false; 
     }else  return;                                 // there is error or waiting recovery
-  }
   
     if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
       floatVoltageRaw = BATT_FLOAT_RAW;  
