@@ -324,7 +324,9 @@ void Read_Sensors(unsigned long currentTime){
   }
   
   sol_watts = max(batteryV*currentInput, 0.0);  // ignore negative power supply current
-  powerCompensation = finishEqualize ? 0 : min(39, max(0, (int)(0.5 * (sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
+  
+  // disable for high accum capacity
+  powerCompensation = 0; // finishEqualize ? 0 : min(39, max(0, (int)(0.5 * (sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
 
   /////////// LOAD SENSORS /////////////
   if(currentADCpin == CURRENT_OUT_SENSOR && ADS.isReady()){

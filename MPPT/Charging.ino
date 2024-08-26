@@ -106,7 +106,6 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     set_pwm_duty(true);
     return;
   }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
-    if(solarV > batteryV + 1.0){
       REC=0;
 //      while(ADS.isBusy()){}
 //      inCurrentOffset = ADS.readADC(CURRENT_IN_SENSOR) + 2;   // zero current offset
@@ -214,7 +213,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
                 duty -= delta;
                 delta /= 2;
                 if(delta == 0){                           //  MP MV ; MPP Reached -                                           
-                  duty = IIR(storeDuty, duty, 64, 128);   // smooth duty value a bit
+                  duty = IIR(storeDuty, duty, 80, 128);   // smooth duty value a bit
                   flip = 1 - flip;
                   mpptReached = 1; // ! indicate MPPT reached
                 } 
