@@ -91,6 +91,7 @@ float
   sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
               
 bool
+  powerCapMode = false,
   LCDcycling     = true,
   finishEqualize = false,
   controlFloat = false;
@@ -269,27 +270,12 @@ void Read_Sensors(unsigned long currentTime){
     batteryVsmooth = IIR2(batteryVsmooth, batteryV);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
 
-// TO remove this block
-//    if(batteryVsmooth < ABSORPTION_START_V) {
-//      if(catchAbsorbtion){
-/*        if(currentTime - catchAbsTime > 3600000ul){ // should spent at least 1h bellow ABSORPTION_START_V to rise up float voltage
-          absorptionAccTime = 0;       
-          floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
-          catchAbsorbtion = false;
-          finishEqualize = catchAbsorbtion;        
-        }*/      
-  //    }
-      //if(!catchAbsorbtion){
-      //  catchAbsTime = currentTime;
-        //catchAbsorbtion = true;
-      //}
-//    } else catchAbsorbtion = false;
-
     // If we've charged the battery above the MAX voltage 0.4V
     if (rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
       charger_state = bat_float;
       duty = 300;
-      set_pwm_duty(true); 
+      powerCapMode = true;      
+      set_pwm_duty(powerCapMode); 
     }
   }
   
@@ -326,7 +312,12 @@ void Read_Sensors(unsigned long currentTime){
   sol_watts = max(batteryV*currentInput, 0.0);  // ignore negative power supply current
   
   // disable for high accum capacity
-  powerCompensation = 0; // finishEqualize ? 0 : min(39, max(0, (int)(0.5 * (sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
+  // powerCompensation = 0; 
+  
+  // enable power correction bias to mitigate overproduction issue 
+  powerCompensation = 
+    (finishEqualize || !powerCapMode) ? 0 
+    : min(39, max(0, (int)(0.5 * (sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
 
   /////////// LOAD SENSORS /////////////
   if(currentADCpin == CURRENT_OUT_SENSOR && ADS.isReady()){

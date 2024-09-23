@@ -115,9 +115,10 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       StoreHarvestingData(currentTime);
       // allow absorbtion
       absorptionAccTime = 0;       
-      absorptionStartTime = 0;
+      absorptionStartTime = currentTime;
       floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
       finishEqualize = false; 
+      powerCapMode = false;
     }else  return;                                 // there is error or waiting recovery
   
     if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
@@ -248,7 +249,7 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
           }
           if (rawBatteryV < floatVoltageRaw + tempCompensationRaw - 40){ //(floatVoltage + tempCompensation - 0.6)) {               // if the voltage drops because of added load,
             absorptionAccTime += currentTime - absorptionStartTime;
-            absorptionStartTime = 0;
+            absorptionStartTime = currentTime;
             charger_state = scanning;                               // switch back into bulk state to keep the voltage up
             flip = 1;
             startTracking = true;
