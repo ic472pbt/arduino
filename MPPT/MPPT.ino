@@ -276,6 +276,7 @@ void Read_Sensors(unsigned long currentTime){
       duty = 300;
       powerCapMode = true;      
       set_pwm_duty(powerCapMode); 
+      
     }
   }
   

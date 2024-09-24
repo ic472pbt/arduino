@@ -115,11 +115,11 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       StoreHarvestingData(currentTime);
       // allow absorbtion
       absorptionAccTime = 0;       
-      absorptionStartTime = currentTime;
+      absorptionStartTime = 0;
       floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
       finishEqualize = false; 
       powerCapMode = false;
-    }else  return;                                 // there is error or waiting recovery
+    }
   
     if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
       floatVoltageRaw = BATT_FLOAT_RAW;  
@@ -225,10 +225,17 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
     else if (charger_state == bat_float){  
         int effectiveBound = floatVoltageRaw + tempCompensationRaw - powerCompensation;
         mpptReached = 0;
-        if(rawBatteryV > floatVoltageRaw + tempCompensationRaw - 25){
+        if(!finishEqualize && rawBatteryV > floatVoltageRaw + tempCompensationRaw - 25){
           if(absorptionStartTime == 0) absorptionStartTime = currentTime;
-          else if(absorptionStartTime > 10000) {absorptionAccTime += currentTime - absorptionStartTime; absorptionStartTime = currentTime;}
-        }
+          else {
+            long interval = currentTime - absorptionStartTime;
+            if(interval > 10000) {          
+              absorptionAccTime += interval; 
+              absorptionStartTime = currentTime;
+            }
+          }
+        } else absorptionStartTime == 0;
+        
         if (solarV + 0.2< batteryV) {                         // if watts input from the solar panel is less than
           charger_state = off;                                // the minimum solar watts then it is getting dark so
           off_count = OFF_NUM;                                // go to the charger off state  
@@ -248,8 +255,10 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
             set_pwm_duty(false);                                      
           }
           if (rawBatteryV < floatVoltageRaw + tempCompensationRaw - 40){ //(floatVoltage + tempCompensation - 0.6)) {               // if the voltage drops because of added load,
-            absorptionAccTime += currentTime - absorptionStartTime;
-            absorptionStartTime = currentTime;
+            if(!finishEqualize && absorptionStartTime > 0){
+              absorptionAccTime += currentTime - absorptionStartTime;
+              absorptionStartTime = 0;
+            }
             charger_state = scanning;                               // switch back into bulk state to keep the voltage up
             flip = 1;
             startTracking = true;
