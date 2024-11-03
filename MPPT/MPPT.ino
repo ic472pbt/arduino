@@ -145,7 +145,7 @@ extern IState* scanInstance;
 extern IState* onInstance;
 
 // object variable that holds state for charger state machine
-IState* currentState = offInstance;
+IState* currentState;
 
 enum button_mode {none, plus, minus, both} button_state;       // enumerated variable that holds state for buttons
 enum valueType {voltage, degree, amper, percent, power, amperHour};      // value type LCD label right indicator
@@ -211,7 +211,7 @@ void loop() {
   
   unsigned long currentTime=millis();  
   Read_Sensors(currentTime);
- /* Serial.print(duty); Serial.print(" "); // Serial.print(ADS.readADC(CURRENT_IN_SENSOR));
+  /*Serial.print(duty); Serial.print(" "); // Serial.print(ADS.readADC(CURRENT_IN_SENSOR));
 Serial.print("load: "); 
 Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 

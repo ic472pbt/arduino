@@ -269,7 +269,7 @@ IState* onInstance = new onState();
 //------------------------------------------------------------------------------------------------------
 void Charging_Algorithm(float sol_volts, unsigned long currentTime) { 
   // rawPowerOld        = 0;    // solar watts from previous time through ppt routine 
-  
+  if(currentState == NULL) currentState = offInstance;  // TODO: remove this when currentState properly instantiated
   if(ERR>0){
     currentState = offInstance;
     duty-=100;
@@ -295,10 +295,9 @@ void Charging_Algorithm(float sol_volts, unsigned long currentTime) {
       floatVoltageRaw = BATT_FLOAT_RAW;  
       finishEqualize = true;
     }
-
+  
     IState* newState = currentState->Handle(sol_volts, currentTime);
     if (newState != currentState) {
       currentState = newState; // Update to the new state if there's a transition
     }
-     
 }
