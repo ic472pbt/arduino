@@ -42,7 +42,7 @@
 #define CURRENT_IN_FACTOR 0.025429352 //<- GAIN2 GAIN1 -> 0.08180441 // 0.03828995 // 2A = 24
 #define CURRENT_IN_LOW_FACTOR 0.009773528
 
-
+#include "Abstract.h"
 #include <EEPROM.h>
 #include <ADS1X15.h>
 #include <TimerOne.h>
@@ -66,8 +66,10 @@ unsigned long
 
 // MPPT
 byte 
+  versionNum         = 1,    // Firmware version.
   currentADCpin      = 0, 
   mpptReached        = 1,
+  stepsDown          = 0,    // number of scan steps to decrease on overpower event
   ERR         = 0;           // SYSTEM PARAMETER - 
            
 unsigned int 
@@ -136,8 +138,16 @@ todayOutAh             = 0.0000,     // SYSTEM PARAMETER - Energy Output for tod
 vInSystemMin           = 10.000;       //  CALIB PARAMETER - 
 
 
+extern IState* offInstance;
+extern floatState* floatInstance;
+extern IState* bulkInstance;
+extern IState* scanInstance;
+extern IState* onInstance;
+
+// object variable that holds state for charger state machine
+IState* currentState = offInstance;
+
 enum button_mode {none, plus, minus, both} button_state;       // enumerated variable that holds state for buttons
-enum charger_mode {off, on, bulk, bat_float, scanning} charger_state;    // enumerated variable that holds state for charger state machine
 enum valueType {voltage, degree, amper, percent, power, amperHour};      // value type LCD label right indicator
 
 void setup() {
@@ -207,7 +217,7 @@ Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
  
   Device_Protection(currentTime, batteryV); 
-  int wait = charger_state == bat_float ? 5000 : 200;
+  int wait = currentState == floatInstance ? 5000 : 200;
   if(controlFloat){ wait = 0;controlFloat = false;}
   if(currentTime - mainTimestamp > wait){ // inertia delay
     Charging_Algorithm(solarV, currentTime);
@@ -270,13 +280,13 @@ void Read_Sensors(unsigned long currentTime){
     batteryVsmooth = IIR2(batteryVsmooth, batteryV);
     BNC = batteryV < vInSystemMin;  //BNC - BATTERY NOT CONNECTED     
 
-    // If we've charged the battery above the MAX voltage 0.4V
+    // If we've charged the battery above the MAX voltage 0.4V rising overpower event
     if (rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
-      charger_state = bat_float;
+      currentState = floatInstance;
+      stepsDown += 1;
       duty = 300;
       powerCapMode = true;      
-      set_pwm_duty(powerCapMode); 
-      
+      set_pwm_duty(powerCapMode);       
     }
   }
   
@@ -341,7 +351,7 @@ void Read_Sensors(unsigned long currentTime){
     todayOutWh += (batteryV * totalLoadCurrent * time_span) / 3.6E+6;
     todayOutAh += totalLoadCurrent * time_span / 3.6E+6;
 
-    if(charger_state != off){
+    if(currentState != offInstance){
       todayWh += (sol_watts * time_span) / 3.6E+6;  //Accumulate and compute energy harvested (3600s*(1000/interval))
       todayAh += max(currentInput, 0.0) * time_span / 3.6E+6;
     }
@@ -555,14 +565,9 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print("Battery Current = "); Serial.println(batteryIsmooth);      
         Serial.print("Load Current = ");    Serial.println(currentLoad);
     
-        Serial.print("Charging = ");
-        if (charger_state == off) Serial.println("off  ");
-        else if (charger_state == on) Serial.println("on ");
-        else if (charger_state == bulk) Serial.println("bulk ");
-        else if (charger_state == bat_float) Serial.println("float");
-        else if (charger_state == scanning) Serial.println("scan");
+        Serial.print("Charging = ");        Serial.println(currentState->GetName());
         Serial.print("pwm = ");
-        if(charger_state == off)
+        if(currentState == offInstance)
           Serial.println(0.0);
         else
           Serial.println(duty/10.23);
@@ -577,6 +582,9 @@ void print_data(float solarVoltage, unsigned long currentTime){
     else if(L=='r'){ //reset harvest data
       ResetHarvestingData();
       Serial.print("ok");
+    }
+    else if(L=='v'){ //firmware version number
+      Serial.print(versionNum);
     }
     else{
       Serial.print("UC"); //unknown command 

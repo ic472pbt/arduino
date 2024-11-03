@@ -176,21 +176,20 @@ void LinkStatus(unsigned long currentTime){
 void PrintMpptStatus(unsigned long currentTime){
     static unsigned long lastBlink    = 0;
     static byte          blinkState   = HIGH;
-      switch(charger_state){
-        case bat_float:
+      if(currentState == floatInstance){
           // indicate battery is in float state
           if(currentTime - lastBlink > 500){
             blinkState = !blinkState;
             lastBlink = currentTime;
           }          
           bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, blinkState);
-          break;
-        case bulk:
-          bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, mpptReached); 
-          break;
-        default:          
-          break;
       }
+      else if(currentState == bulkInstance){
+          bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, mpptReached); 
+      }
+      else{          
+         
+      };
 }
 
 void LCDinfo(unsigned long currentTime){
