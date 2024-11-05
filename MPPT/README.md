@@ -44,7 +44,7 @@ Contains the main charging logic, managing transitions between charging states b
 Implements safety mechanisms to protect the system from potentially damaging conditions. This includes monitoring for overcurrent, overvoltage, and overheating, as well as battery connection detection.
 
 ### **4. LCD.ino**
-Manages the LCD display, showing real-time data about the solar charge controller’s operation. Displays current state, voltages, currents, temperature, and accumulated energy metrics. Also provides basic user interaction through buttons for cycling display data or settings.
+Manages the LCD display, showing real-time data about the solar charge controller s operation. Displays current state, voltages, currents, temperature, and accumulated energy metrics. Also provides basic user interaction through buttons for cycling display data or settings.
 
 ### **5. MPPT.ino**
 Implements the MPPT algorithm that optimizes power extraction from the solar panel by adjusting the duty cycle based on varying sunlight conditions. This module enhances charging efficiency by dynamically finding the maximum power point.
@@ -53,14 +53,14 @@ Implements the MPPT algorithm that optimizes power extraction from the solar pan
 
 - **Arduino Board** (e.g., Arduino Uno, Nano)
 - **MPPT140D Solar Charge Controller** (with failed MCU)
-- **Voltage and Current Sensors** (e.g., INA219 for accurate measurements)
+- **Voltage and Current Sensors** (e.g., ADS1015 for accurate measurements)
 - **Shift 595 register**
 
 ## Software Setup
 
 1. **Arduino IDE**: [Download](https://www.arduino.cc/en/software) and install the Arduino IDE.
 2. **Required Libraries**:
-   - **Adafruit INA219** (for voltage and current sensing)
+   - **ADS1X15** (for voltage and current sensing)
    - **TimerOne** (for PWM control, if applicable)
    - **Wire** (for I2C communication with sensors)
 

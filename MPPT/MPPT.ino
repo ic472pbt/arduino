@@ -24,7 +24,6 @@
 #define LPr 11      // latch pin 595 right register
 #define CP 10       // clock pin 595 
 #define DP 12       // data pin 595 
-#define PWM 9
 #define LOAD 13
 
 #define LOAD_V_SENSOR A0
@@ -43,11 +42,15 @@
 #define CURRENT_IN_LOW_FACTOR 0.009773528
 
 #include "Abstract.h"
+#include "IIRFilter.h"
+#include "PWM.h"
 #include <EEPROM.h>
 #include <ADS1X15.h>
 #include <TimerOne.h>
 
 ADS1015 ADS(0x48);
+IIRFilter dutyIIR(80, 120); 
+PWM& pwmController = PWM::getInstance(dutyIIR);
 
 // global variables
 
@@ -66,17 +69,14 @@ unsigned long
 
 // MPPT
 byte 
-  versionNum         = 1,    // Firmware version.
+  versionNum         = 2,    // Firmware version.
   currentADCpin      = 0, 
   mpptReached        = 1,
   stepsDown          = 0,    // number of scan steps to decrease on overpower event
   ERR         = 0;           // SYSTEM PARAMETER - 
            
 unsigned int 
-  LCDmap[6],                 // LCD memory
-  mpptDuty,                  // store pwm duty at mppt point to limit in float mode
-  storeDuty,                 // store pwm duty for smoothing
-  duty;                      // pwm duty    
+  LCDmap[6];                 // LCD memory
 bool
 BNC                   = 0,           // SYSTEM PARAMETER -  
 REC                   = 0,           // SYSTEM PARAMETER - 
@@ -167,8 +167,7 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
   ReadHarvestingData();
-  Timer1.initialize(40);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
-  Timer1.pwm(PWM, 0);
+  pwmController.initialize(40);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   ADS.begin();
   ADS.setGain(1);  // 4.096V max
   BTS = analogRead(RT1);
@@ -284,9 +283,9 @@ void Read_Sensors(unsigned long currentTime){
     if (rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
       currentState = floatInstance;
       stepsDown += 1;
-      duty = 300;
+      pwmController.setDuty(300);
       powerCapMode = true;      
-      set_pwm_duty(powerCapMode);       
+      pwmController.shutdown();       
     }
   }
   
@@ -366,14 +365,8 @@ int prevValue = 0;
 void monitor_button(){
   
     button_mode value = read_button();
-    if(prevValue-curValue > 200 && value == plus){      
-      duty += 2;
-      set_pwm_duty(false);
-    }
-    if(prevValue-curValue > 200 && value == minus){
-      duty -= 2;
-      set_pwm_duty(false);
-    }
+    if(prevValue-curValue > 200 && value == plus) pwmController.incrementDuty(2);
+    if(prevValue-curValue > 200 && value == minus) pwmController.incrementDuty(-2);
     if(prevValue-curValue > 200 && value == both) LCDcycling = !LCDcycling;
     prevValue = curValue;
 }
@@ -493,11 +486,11 @@ void print_data(float solarVoltage, unsigned long currentTime){
     lastLinkActiveTime = currentTime;
     char L = Serial.read();        
     if(L=='c'){ // calibration data request      
-        Serial.print(" mDuty:");      Serial.print(mpptDuty);    
+        Serial.print(" mDuty:");      Serial.print(pwmController.mpptDuty);    
         Serial.print(" IN curr:");    Serial.print(rawCurrentIn + inCurrentOffset);    
         Serial.print(" OUT offst:");  Serial.print(outCurrentOffset);    
         Serial.print(" OUT curr:");   Serial.print(rawCurrentOut + outCurrentOffset);    
-        Serial.print(" PWM:");        Serial.print(duty);
+        Serial.print(" PWM:");        Serial.print(pwmController.duty);
         Serial.print(" RT1:");        Serial.print(analogRead(RT1));    
         Serial.print(" RT2:");        Serial.print(analogRead(RT2));    
         Serial.print(" ABS(h):");     Serial.print(absorptionAccTime/3600000.0);
@@ -570,7 +563,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
         if(currentState == offInstance)
           Serial.println(0.0);
         else
-          Serial.println(duty/10.23);
+          Serial.println(pwmController.duty/10.23);
         
         Serial.print("OUT Temp = ");    Serial.println(temperature);
         Serial.print("SYS Temp = ");    Serial.print(Voltage2Temp(BTS));
