@@ -1,3 +1,6 @@
+#ifndef PWM_H
+#define PWM_H
+
 #define PWM_PIN 9 // PWM pin
 #define MIN_ACTIVE_DUTY 300              // minimum duty sensitive to current change
 #define MAX_DUTY 1023                    // maximum duty
@@ -15,23 +18,14 @@ class PWM {
     IIRFilter& 
       filter;  // Reference to an IIRFilter instance
 
-    // Private constructor to prevent direct instantiation
-    PWM(IIRFilter& filterInstance) 
-        : filter(filterInstance), mpptDuty(0), duty(0) {}
-    // Delete copy constructor and assignment operator to prevent copies
-    PWM(const PWM&) = delete;
-    PWM& operator=(const PWM&) = delete;
     
   public:
     unsigned int 
       mpptDuty,                  // store pwm duty at mppt point to limit in float mode
       duty;                      // pwm duty    
 
-    // Static method to access the single instance of the class
-    static PWM& getInstance(IIRFilter& filterInstance) {
-        static PWM instance(filterInstance);  // Instantiate only once, passing the filter instance
-        return instance;
-    }
+    // Constructor that accepts an IIRFilter instance
+    PWM(IIRFilter& filterInstance) : filter(filterInstance), mpptDuty(0), duty(0) {}
         
     void shutdown(){
       Timer1.pwm(PWM_PIN, 0);
@@ -52,7 +46,7 @@ class PWM {
     }
 
     void setMaxDuty(){
-      setDuty(MIN_ACTIVE_DUTY);
+      setDuty(MAX_DUTY);
     }
 
     void smoothDuty(){
@@ -73,3 +67,4 @@ class PWM {
         Timer1.pwm(PWM_PIN, 0);     // Set initial PWM duty cycle to 0 on the PWM pin
     }
 };
+#endif // PWM_H

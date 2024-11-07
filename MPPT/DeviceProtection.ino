@@ -32,8 +32,8 @@ void Device_Protection(unsigned long currentTime, float voltageOutput){
   //FAULT DETECTION     
   ERR = OTE || IOC || IUV || BNC;                                                                                          //Reset local error counter
     
-  if(batteryV>HVD)                                      {OOV=1;ERR++;hvd_event=true;}else{OOV=0;}  //OOV - OUTPUT OVERVOLTAGE: Output voltage has reached absolute limit                     
-  if(batteryV<LVD){
+  if(sensors.values.batteryV>HVD)                                      {OOV=1;ERR++;hvd_event=true;}else{OOV=0;}  //OOV - OUTPUT OVERVOLTAGE: Output voltage has reached absolute limit                     
+  if(sensors.values.batteryV<LVD){
     if(!prev_lvd_event){
       prev_lvd_event=true;
       lvdLastTime = currentTime;
@@ -50,8 +50,8 @@ void Device_Protection(unsigned long currentTime, float voltageOutput){
     lastLoadDisconnect = currentTime;
     StoreHarvestingData(currentTime);
   }else if(currentTime - lastLoadDisconnect > LOAD_DISCONNECT_LIMIT){
-    lvd_event &= (batteryV <= LVR);
-    hvd_event &= (batteryV >= HVD);
+    lvd_event &= (sensors.values.batteryV <= LVR);
+    hvd_event &= (sensors.values.batteryV >= HVD);
 
     load_on(!(lvd_event || hvd_event)); // also OOC recovery
   }   

@@ -148,7 +148,7 @@ void PrintOutSolar(float num, valueType kind){
 }
 
 void BatteryPercent(){
-  float ratio = (batteryV - LVD)/(ABSORPTION_START_V - LVD);
+  float ratio = (sensors.values.batteryV - LVD)/(ABSORPTION_START_V - LVD);
   bitWrite(LCDmap[5], 2, ratio > 0.90 ? 1 : 0);
   bitWrite(LCDmap[5], 1, ratio > 0.70 ? 1 : 0);
   bitWrite(LCDmap[4], 1, ratio > 0.50 ? 1 : 0);
@@ -176,7 +176,7 @@ void LinkStatus(unsigned long currentTime){
 void PrintMpptStatus(unsigned long currentTime){
     static unsigned long lastBlink    = 0;
     static byte          blinkState   = HIGH;
-      if(currentState == floatInstance){
+      if(charger.currentState->isFloat()){
           // indicate battery is in float state
           if(currentTime - lastBlink > 500){
             blinkState = !blinkState;
@@ -184,8 +184,8 @@ void PrintMpptStatus(unsigned long currentTime){
           }          
           bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, blinkState);
       }
-      else if(currentState == bulkInstance){
-          bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, mpptReached); 
+      else if(charger.currentState->isBulk()){
+          bitWrite(LCDmap[MPPT_COM], MPPT_SHIFT, charger.mpptReached); 
       }
       else{          
          
@@ -210,20 +210,20 @@ void LCDinfo(unsigned long currentTime){
         if(LCDcycling && !(innerCycle++ % 8)) LCDinfoCycle = (LCDinfoCycle + 1) % 5;        
         switch(LCDinfoCycle){
           case 0:
-            PrintOutRight(batteryV, voltage);
-            PrintOutSolar(solarV, voltage);
+            PrintOutRight(sensors.values.batteryV, voltage);
+            PrintOutSolar(sensors.values.PVvoltage, voltage);
             break;
           case 1:
-            PrintOutRight(temperature, degree);
-            PrintOutSolar(Voltage2Temp(BTS), degree);
+            PrintOutRight(sensors.values.temperature, degree);
+            PrintOutSolar(sensors.boardTemperature(), degree);
             break;
           case 2:            
-            PrintOutRight(currentLoad, amper);
-            PrintOutSolar(currentInput, amper);
+            PrintOutRight(sensors.values.currentLoad, amper);
+            PrintOutSolar(sensors.values.currentInput, amper);
             break;
           case 3:
-            PrintOutRight(min(pwmController.duty/10.23, 99.9), percent);
-            PrintOutSolar(sol_watts, power);
+            PrintOutRight(min(charger.pwmController.duty/10.23, 99.9), percent);
+            PrintOutSolar(charger.sol_watts, power);
             break;
           case 4:
             PrintOutRight(todayOutAh, amperHour);
