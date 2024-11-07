@@ -62,15 +62,15 @@ class Sensors {
 
       /////////// BATTERY SENSORS /////////////
       if(currentADCpin == BAT_V_SENSOR && ADS.isReady()){
-        charger.rawBatteryV = ADS.getValue(); // ADS.readADC(BAT_V_SENSOR); 
+        values.rawBatteryV = ADS.getValue(); // ADS.readADC(BAT_V_SENSOR); 
         currentADCpin += 1;
         ADS.requestADC(currentADCpin); // 10ms until read is ready
-        values.batteryV = charger.rawBatteryV * BAT_SENSOR_FACTOR;
+        values.batteryV = values.rawBatteryV * BAT_SENSOR_FACTOR;
         values.batteryVsmooth = IIR2(values.batteryVsmooth, values.batteryV);
         BNC = values.batteryV < MIN_SYSTEM_VOLTAGE;  //BNC - BATTERY NOT CONNECTED     
     
         // If we've charged the battery above the MAX voltage 0.4V rising overpower event
-        if (charger.rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
+        if (values.rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
           charger.currentState = &charger.floatInstance;
           // stepsDown += 1;
           charger.pwmController.setDuty(300);
@@ -105,7 +105,7 @@ class Sensors {
           if(charger.rawCurrentIn < 78) {currentGain = 2; inCurrentOffset = CURRENT_OFFSET;}
         }
         values.batteryIsmooth = IIR2(values.batteryIsmooth, values.currentInput);
-        values.rawPower = charger.rawBatteryV * charger.rawCurrentIn;
+        values.rawPower = values.rawBatteryV * charger.rawCurrentIn;
         IOC = values.currentInput  > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
       }
       
@@ -123,7 +123,7 @@ class Sensors {
     
     void SetTempCompensation(){
       values.temperature = Voltage2Temp(TS);
-      values.tempCompensationRaw = (int)((25.0 - values.temperature) * TEMP_COMPENSATION_CF / BAT_SENSOR_FACTOR);
+      charger.tempCompensationRaw = (int)((25.0 - values.temperature) * TEMP_COMPENSATION_CF / BAT_SENSOR_FACTOR);
     }
     float boardTemperature(){
       return Voltage2Temp(BTS);
@@ -138,9 +138,9 @@ class Sensors {
       TSFilter.reset(analogRead(RT2));
       BTSFilter.reset(analogRead(RT1));      
       SetTempCompensation();
-      charger.rawBatteryV = ADS.readADC(BAT_V_SENSOR);
+      values.rawBatteryV = ADS.readADC(BAT_V_SENSOR);
       charger.rawSolarV =   ADS.readADC(SOL_V_SENSOR);
-      values.batteryV = charger.rawBatteryV * BAT_SENSOR_FACTOR;
+      values.batteryV = values.rawBatteryV * BAT_SENSOR_FACTOR;
       values.batteryVsmooth = values.batteryV;  
       values.PVvoltageSmooth = charger.rawSolarV * SOL_V_SENSOR_FACTOR;
       // ADS.setGain(1); // 4.096V max

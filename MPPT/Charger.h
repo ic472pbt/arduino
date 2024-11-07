@@ -24,9 +24,9 @@ private:
 public:
     int 
       powerCompensation     = 0,
-      rawBatteryV           = 0,           // SYSTEM PARAMETER - 
       rawCurrentIn          = 0,           // SYSTEM PARAMETER - 
-      rawSolarV             = 0;           // SYSTEM PARAMETER - 
+      rawSolarV             = 0,           // SYSTEM PARAMETER - 
+      tempCompensationRaw   = 0;           // SYSTEM PARAMETER - Voltage offset for ambient temperature
     byte
         off_count = OFF_NUM,
         mpptReached        = 1,
@@ -93,6 +93,19 @@ public:
         if (newState != currentState) {
           currentState = newState; // Update to the new state if there's a transition
         }
+    }
+
+    // transit the charger to the off state
+    offState goOff(){
+      off_count = OFF_NUM;                  
+      pwmController.shutdown(); 
+      return offInstance;
+    }
+
+    // transit to on state
+    onState goOn(){
+      pwmController.setMaxDuty();
+      return onInstance;
     }
 };
 #endif

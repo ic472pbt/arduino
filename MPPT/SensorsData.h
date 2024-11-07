@@ -5,8 +5,8 @@
 struct SensorsData {
     int
       floatVoltageRaw = MAX_BAT_VOLTS_RAW,  // float or absorb    
-      rawCurrentOut         = 0,           // SYSTEM PARAMETER -     
-      tempCompensationRaw   = 0;            // SYSTEM PARAMETER - Voltage offset for ambient temperature
+      rawBatteryV           = 0,           // SYSTEM PARAMETER - 
+      rawCurrentOut         = 0;            // SYSTEM PARAMETER -     
     unsigned long 
       rawPower              = 0;  
     float

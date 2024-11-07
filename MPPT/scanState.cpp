@@ -12,7 +12,7 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           charger.startTracking = true;
         }else{
           cycleNum++;
-          unsigned long solarPower = (unsigned long)charger.rawCurrentIn * charger.rawBatteryV;
+          unsigned long solarPower = (unsigned long)charger.rawCurrentIn * sensor.rawBatteryV;
           if(solarPower > bestPower){
             bestPower = solarPower;
             bestDuty = charger.pwmController.duty;
