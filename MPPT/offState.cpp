@@ -12,7 +12,7 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
           charger.off_count--;                                        // anything, this is to allow the battery voltage to settle down to see if the  
       }                                                     // battery has been disconnected
       else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {
-          newState = &charger.goFloat();                         // if battery voltage is still high and solar volts are high
+          newState = charger.goFloat();                         // if battery voltage is still high and solar volts are high
       }    
       else if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > sensor.batteryV)) {
           newState = &charger.scanInstance;

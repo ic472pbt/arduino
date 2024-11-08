@@ -67,14 +67,14 @@ public:
 
     void Charge(SensorsData& sensor, unsigned long currentTime){
         if(ERR>0){
-          currentState = &offInstance;
+          currentState = goOff();
           pwmController.incrementDuty(-100);
           pwmController.shutdown();
           return;
         }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
           REC=0;
           pwmController.setMinDuty(); 
-          currentState = &floatInstance;
+          currentState = goFloat();
           StoreHarvestingData(currentTime);
           // allow absorbtion
           absorptionAccTime = 0;       
@@ -99,24 +99,23 @@ public:
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
     
     // transit the charger to the off state
-    offState goOff(){
+    IState* goOff(){
       off_count = OFF_NUM;                  
       pwmController.shutdown(); 
-      return offInstance;
+      return &offInstance;
     }
 
     // transit to on state
-    onState goOn(){
+    IState* goOn(){
       pwmController.setMaxDuty();
-      return onInstance;
+      return &onInstance;
     }
 
     // transit to the float state
-    floatState goFloat(){
-      pwmController.storeMpptDuty();
+    IState* goFloat(){
       controlFloat = true;
       pwmController.resume();
-      return floatInstance;
+      return &floatInstance;
     }
 };
 #endif
