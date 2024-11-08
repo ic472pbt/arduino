@@ -62,7 +62,7 @@ unsigned long
   
 // MPPT
 byte 
-  versionNum         = 3,    // Firmware version.
+  versionNum         = 4,    // Firmware version.
 
 
   ERR         = 0;           // SYSTEM PARAMETER - 
@@ -93,9 +93,7 @@ int
   avgCountTS             = 50;        //  CALIB PARAMETER - Temperature Sensor Average Sampling Count
 
 
-float
-
-   
+float   
 currentOutAbsolute     = 35.0000,      //  CALIB PARAMETER - Maximum Output Current The System Can Handle (A - Input)
 totalDaysRunning      = 0.0,         // total days running
 daysRunning           = 0.0000,      // SYSTEM PARAMETER - Stores the total number of days the MPPT device has been running since last powered
@@ -181,28 +179,8 @@ delay(200);*/
   LCDinfo(currentTime);
 }
 
-
-
-
-
-unsigned int IIR(unsigned int oldValue, unsigned int newValue, unsigned int alpha, unsigned int Q){
-  // 128 = 110 + 18 -> alpha = 0.86 / 0.14
-  // 128 = 92 + 36 -> alpha = 0.72 / 0.28
-  return (unsigned int)((alpha * (unsigned long)(oldValue) + (Q - alpha) * (unsigned long)(newValue)) / Q); 
-}
-
-
-
-
-
-void Read_Sensors(unsigned long currentTime){
-  
+void Read_Sensors(unsigned long currentTime){  
   static bool catchAbsorbtion = false;
-
-
-  
-  
-  
   charger.sol_watts = max(sensors.values.batteryV*sensors.values.currentInput, 0.0);  // ignore negative power supply current
   
   // disable for high accum capacity
@@ -210,7 +188,7 @@ void Read_Sensors(unsigned long currentTime){
   
   // enable power correction bias to mitigate overproduction issue 
   charger.powerCompensation = 
-    (charger.finishEqualize || !charger.powerCapMode) ? 0 
+    (charger.finishEqualize || !charger.stepsDown > 0) ? 0 
     : min(39, max(0, (int)(0.5 * (charger.sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
 
   

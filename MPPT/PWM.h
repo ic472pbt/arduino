@@ -30,6 +30,10 @@ class PWM {
     void shutdown(){
       Timer1.pwm(PWM_PIN, 0);
     }
+
+    void resume(){
+      Timer1.pwm(PWM_PIN, duty);
+    }
     
     void setDuty(unsigned int D) {
         duty = min(1023, max(5, D));        // check limits of PWM duty cyle and set to PWM_MAX
@@ -63,8 +67,8 @@ class PWM {
 
     // Initialization function to set up Timer1 settings
     void initialize(int T) {
-        Timer1.initialize(T);      // Initialize Timer1 with a 40 µs period (~25 kHz)
-        Timer1.pwm(PWM_PIN, 0);     // Set initial PWM duty cycle to 0 on the PWM pin
+        Timer1.initialize(T);     // Initialize Timer1 with a 40 µs period (~25 kHz)
+        shutdown();               // Set initial PWM duty cycle to 0 on the PWM pin
     }
 };
 #endif // PWM_H

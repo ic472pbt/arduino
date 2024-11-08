@@ -20,6 +20,9 @@ extern byte ERR;
 
 class Charger{
 private:
+    floatState floatInstance;
+    offState offInstance;
+    onState onInstance;
 
 public:
     int 
@@ -30,18 +33,18 @@ public:
     byte
         off_count = OFF_NUM,
         mpptReached        = 1,
-        stepsDown           = 0;    // number of scan steps to decrease on overpower event
+        stepsDown          = 0;    // number of scan steps to decrease on overpower event
     bool 
       finishEqualize = false,
       startTracking = true,  
-      powerCapMode = false,
+//      powerCapMode = false,
       controlFloat = false;
     unsigned long
       absorptionStartTime   = 0,           //SYSTEM PARAMETER -
       absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
     float 
       sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
-      
+    char dirrection = 1;  // Public property for accessing flip
     // object variable that holds state for charger state machine
     IState* currentState;
     PWM pwmController;  // PWM instance created within Charger
@@ -51,11 +54,8 @@ public:
 // It's called once each time through the main loop to see what state the charger should be in.
 // The battery charger can be in one of the following five states:
 // 
-    floatState floatInstance;
     scanState scanInstance;
     bulkState bulkInstance;
-    onState onInstance;
-    offState offInstance;
     
     // Constructor that accepts an IIRFilter reference
     Charger(IIRFilter& filter) : pwmController(filter), currentState(&offInstance) {}
@@ -81,7 +81,7 @@ public:
           absorptionStartTime = 0;
           sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
           finishEqualize = false; 
-          powerCapMode = false;
+//          powerCapMode = false;
         }
   
         if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
@@ -95,6 +95,9 @@ public:
         }
     }
 
+    void Reverse() {dirrection *= -1;}  
+    int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
+    
     // transit the charger to the off state
     offState goOff(){
       off_count = OFF_NUM;                  
@@ -106,6 +109,14 @@ public:
     onState goOn(){
       pwmController.setMaxDuty();
       return onInstance;
+    }
+
+    // transit to the float state
+    floatState goFloat(){
+      pwmController.storeMpptDuty();
+      controlFloat = true;
+      pwmController.resume();
+      return floatInstance;
     }
 };
 #endif
