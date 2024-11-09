@@ -1,7 +1,5 @@
 
-
 #define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
-
 #define ABSORPTION_START_V 12.6     // switch to absorption mode if bellow
 #define ABSORPTION_START_V_RAW 844 // 564  // switch to absorption mode if bellow
 #define CURRENT_ABSOLUTE_MAX 40.0    //  CALIB PARAMETER - Maximum Current The System Can Handle
@@ -342,7 +340,6 @@ void print_data(float solarVoltage, unsigned long currentTime){
     if(L=='c'){ // calibration data request      
         Serial.print(" mDuty:");      Serial.print(charger.pwmController.mpptDuty);    
         Serial.print(" IN curr:");    Serial.print(charger.rawCurrentIn + sensors.inCurrentOffset);    
-        Serial.print(" OUT offst:");  Serial.print(sensors.outCurrentOffset);    
         Serial.print(" OUT curr:");   Serial.print(sensors.values.rawCurrentOut + sensors.outCurrentOffset);    
         Serial.print(" PWM:");        Serial.print(charger.pwmController.duty);
         Serial.print(" RT1:");        Serial.print(analogRead(RT1));    
@@ -351,6 +348,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(charger.tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
         Serial.print(" PCor V:");    Serial.print(-charger.powerCompensation * BAT_SENSOR_FACTOR); // power correction
+        Serial.print(" sDown:");     Serial.print(charger.stepsDown);    
     }
     else if(L=='e'){ // errors request
         Serial.print(" ERR:");   Serial.print(ERR);

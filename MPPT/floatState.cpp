@@ -34,8 +34,8 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
             if(charger.pwmController.duty < charger.pwmController.mpptDuty){   // protect duty from drifting up
               incrementsCounter++;
               charger.pwmController.incrementDuty(2);                                              // up
-              // There is less excess power when there are three consecutive increments. Begin stepsDown decrease 
-              if(incrementsCounter > 3){
+              // There is less excess power when there are consecutive compensated increments. Begin stepsDown decrease 
+              if(incrementsCounter >= charger.stepsDown * 2){
                 incrementsCounter = 0;
                 charger.stepsDown = max(0, charger.stepsDown - 1);
               }
