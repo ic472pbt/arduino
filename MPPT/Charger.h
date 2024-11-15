@@ -23,6 +23,8 @@ private:
     floatState floatInstance;
     offState offInstance;
     onState onInstance;
+    scanState scanInstance;
+    bulkState bulkInstance;
 
 public:
     int 
@@ -54,8 +56,6 @@ public:
 // It's called once each time through the main loop to see what state the charger should be in.
 // The battery charger can be in one of the following five states:
 // 
-    scanState scanInstance;
-    bulkState bulkInstance;
     
     // Constructor that accepts an IIRFilter reference
     Charger(IIRFilter& filter) : pwmController(filter), currentState(&offInstance) {}
@@ -117,5 +117,19 @@ public:
       pwmController.resume();
       return &floatInstance;
     }
+
+    // transit to the bulk state
+    IState* goBulk(unsigned long currentTime){
+      bulkInstance.lastRescanTime = currentTime;
+      return &bulkInstance;
+    }  
+    
+    // transit to the scan state
+    IState* goScan(){
+      startTracking = true;
+      dirrection = 1;
+      pwmController.setMinDuty();
+      return &scanInstance;
+    }        
 };
 #endif

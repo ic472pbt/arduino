@@ -60,7 +60,7 @@ unsigned long
   
 // MPPT
 byte 
-  versionNum         = 4,    // Firmware version.
+  versionNum         = 5,    // Firmware version.
 
 
   ERR         = 0;           // SYSTEM PARAMETER - 

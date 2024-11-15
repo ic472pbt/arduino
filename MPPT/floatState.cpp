@@ -45,9 +45,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
                 charger.absorptionAccTime += currentTime - charger.absorptionStartTime;
                 charger.absorptionStartTime = 0;
               }
-              newState = &charger.scanInstance;        // switch back into bulk state to keep the voltage up
-              charger.dirrection = 1;
-              charger.startTracking = true;
+              newState = charger.goScan();        // switch back into bulk state to keep the voltage up
             }
           }
           return newState;

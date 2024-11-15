@@ -15,8 +15,7 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
         }
         else {              
           // else if we are making more power than low solar watts figure out what the pwm
-          newState = &charger.scanInstance;
-          charger.startTracking = true;
+          newState = charger.goScan();
           charger.pwmController.setMinDuty();
           charger.pwmController.initIIR();
           // stepSize = 16; flip = 1;

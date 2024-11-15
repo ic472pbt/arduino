@@ -15,8 +15,7 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
           newState = charger.goFloat();                         // if battery voltage is still high and solar volts are high
       }    
       else if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > sensor.batteryV)) {
-          newState = &charger.scanInstance;
-          charger.pwmController.setMinDuty();
+          newState = charger.goScan();
       }
       return newState;
     }

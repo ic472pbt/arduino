@@ -1,6 +1,7 @@
 #ifndef BULKSTATE_H
 #define BULKSTATE_H
 #define MAX_PWM_DELTA 4
+#define RESCAN_INTERVAL 1800000U // 30 min
 
 #include "IState.h"
 class Charger;  // Forward declaration of Charger
@@ -19,6 +20,9 @@ class bulkState : public IState {
       delta = 10,      
       voltageInputPrev = 0;
   public:
+    unsigned long 
+      lastRescanTime;
+
     bulkState() : IState("bulk") {}
     
     IState* Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) override;
