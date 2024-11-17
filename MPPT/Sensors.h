@@ -71,7 +71,7 @@ class Sensors {
     
         // If we've charged the battery above the MAX voltage 0.4V rising overpower event
         if (values.rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
-          charger.stepsDown += 1;
+          charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
           // charger.powerCapMode = true;      
           charger.currentState = charger.goOff();

@@ -8,6 +8,7 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           cycleNum = 0;
           bestPower = 0;
           charger.pwmController.setDuty(bestDuty);
+          charger.pwmController.initIIR();
           newState = charger.goBulk(currentTime);
           charger.startTracking = true;
         }else{

@@ -49,7 +49,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
                 charger.pwmController.incrementDuty(-delta);
                 delta /= 2;
                 if(delta == 0){                                                // MPP Reached 
-                  charger.pwmController.incrementDuty(-charger.stepsDown * 4); // protection against repeated overpower events                                            
+                  // charger.pwmController.incrementDuty(-charger.stepsDown * 4); // protection against repeated overpower events                                            
                   charger.pwmController.smoothDuty();                          // smooth duty value a bit
                   charger.Reverse();                                           // Change the direction for the next tracking.
                   charger.mpptReached = 1;                                     // indicate MPP reached

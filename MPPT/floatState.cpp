@@ -23,7 +23,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
             newState = charger.goOff();                     // the minimum solar watts then it is getting dark so
           }        
           else if (sensor.rawBatteryV > effectiveBound) {                    // If we've charged the battery above the float voltage                   
-            int delta = (sensor.rawBatteryV - effectiveBound) / 2 + charger.stepsDown * 4; 
+            int delta = (sensor.rawBatteryV - effectiveBound) + charger.stepsDown * 4; 
             // Serial.print(batteryV);Serial.print("decrease "); Serial.println(delta);
             incrementsCounter = 0;
             charger.pwmController.incrementDuty(-delta);                                      // down
@@ -40,7 +40,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
                 charger.stepsDown = max(0, charger.stepsDown - 1);
               }
             }
-            if (sensor.rawBatteryV < floatV - 40){ //(floatVoltage + tempCompensation - 0.6)) {               // if the voltage drops because of added load,
+            if (sensor.rawBatteryV < floatV - 80){ //(floatVoltage + tempCompensation - 1.2)) {   // if the voltage drops because of added load,
               if(!charger.finishEqualize && charger.absorptionStartTime > 0){
                 charger.absorptionAccTime += currentTime - charger.absorptionStartTime;
                 charger.absorptionStartTime = 0;
