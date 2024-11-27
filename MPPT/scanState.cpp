@@ -7,7 +7,7 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         if(cycleNum == 1){
           cycleNum = 0;
           // bestPower = 0;
-          bestDuty = (unsigned int)(sensor.batteryV * 1023.0 / sensor.PVvoltage); // try guess best duty
+          bestDuty = (unsigned int)(sensor.batteryV * 1023.0 / sensor.PVvoltage) + 50; // try to guess best duty
           charger.pwmController.setDuty(bestDuty);
           charger.pwmController.initIIR();
           newState = charger.goBulk(currentTime);
