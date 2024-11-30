@@ -1,5 +1,6 @@
 #define RT1 A2
 #define RT2 A3
+#define BOARD_TEMP_OFFSET -0.2              // CALIB PARAMETER offset board temperature relative to ambient
 #define MAX_BOARD_TEMPERATURE 60.0          // USER PARAMETER - Overtemperature, System Shudown When Exceeded (deg C)
 #define MIN_SYSTEM_VOLTAGE    10.0          //  CALIB PARAMETER - 
 #define SOL_V_SENSOR_FACTOR 0.04226373 // 0.06352661 // 19.23 = 455
@@ -124,8 +125,10 @@ class Sensors {
       values.temperature = Voltage2Temp(TS);
       charger.tempCompensationRaw = (int)((25.0 - values.temperature) * TEMP_COMPENSATION_CF / BAT_SENSOR_FACTOR);
     }
+
+    // convert raw int system temperature to float
     float boardTemperature(){
-      return Voltage2Temp(BTS);
+      return Voltage2Temp(BTS) + BOARD_TEMP_OFFSET;
     }
     
     void initialize(){
