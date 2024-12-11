@@ -42,7 +42,7 @@ class PWM {
         duty = min(1023, max(5, D));        // check limits of PWM duty cyle and set to PWM_MAX
                                             // if pwm is less than PWM_MIN then set it to PWM_MIN
         Timer1.pwm(PWM_PIN, duty);
-        isOff = duty > 0;
+        isOff = duty == 0;
     }
 
     void initIIR(){

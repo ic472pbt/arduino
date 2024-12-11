@@ -67,7 +67,6 @@ class Sensors {
         currentADCpin += 1;
         ADS.requestADC(currentADCpin); // 10ms until read is ready
         values.batteryV = values.rawBatteryV * BAT_SENSOR_FACTOR;
-        if(charger.pwmController.isShuteddown()) values.PVvoltageFloat = values.batteryV; // update float PV value
         values.batteryVsmooth = IIR2(values.batteryVsmooth, values.batteryV);
         BNC = values.batteryV < MIN_SYSTEM_VOLTAGE;  //BNC - BATTERY NOT CONNECTED     
     
@@ -87,6 +86,7 @@ class Sensors {
         ADS.setGain(currentGain); // read current IN
         ADS.requestADC(currentADCpin);
         values.PVvoltage = charger.rawSolarV * SOL_V_SENSOR_FACTOR;
+        if(charger.pwmController.isShuteddown()) values.PVvoltageFloat = values.PVvoltage; // update float PV value
         values.PVvoltageSmooth = IIR2(values.PVvoltageSmooth, values.PVvoltage);
         if(values.PVvoltage + 0.5 < values.batteryV) {IUV=1;REC=1;}else{IUV=0;}   //IUV - INPUT UNDERVOLTAGE: Input voltage is below max battery charging voltage (for charger mode only)     
       }
