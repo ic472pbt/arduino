@@ -8,7 +8,7 @@
 #define INVERTOR_ON_THR 910  // 13.5V 
 #define INVERTOR_OFF_THR 816 // 11.9V 
 #define CHARGER_ON_THR 850   // 12.4V good
-#define CHARGER_OFF_THR 885  // 13.1V good
+#define CHARGER_OFF_THR 900  // 13.4V good
 // 20 minutes
 #define ON_INVERTOR_MIN_TIME 4700 // 600000ul //  
 // 120 seconds

@@ -60,7 +60,7 @@ unsigned long
   
 // MPPT
 byte 
-  versionNum         = 5,    // Firmware version.
+  versionNum         = 6,    // Firmware version.
 
 
   ERR         = 0;           // SYSTEM PARAMETER - 
@@ -400,16 +400,11 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.println(solarCurrent);
       //  Serial.print("      ");
       
-        Serial.print("Voltage (panel) = "); Serial.println(sensors.values.PVvoltageSmooth);
-        
-        Serial.print("Power (panel) = ");
-        Serial.println(charger.sol_watts);
-      
-        Serial.print("Battery Voltage = "); Serial.println(sensors.values.batteryVsmooth);
-      
+        Serial.print("Voltage (panel) = "); Serial.println(sensors.values.PVvoltageSmooth);        
+        Serial.print("Power (panel) = ");   Serial.println(charger.sol_watts);      
+        Serial.print("Battery Voltage = "); Serial.println(sensors.values.batteryVsmooth);      
         Serial.print("Battery Current = "); Serial.println(sensors.values.batteryIsmooth);      
-        Serial.print("Load Current = ");    Serial.println(sensors.values.currentLoad);
-    
+        Serial.print("Load Current = ");    Serial.println(sensors.values.currentLoad);    
         Serial.print("Charging = ");        Serial.println(charger.currentState->GetName());
         Serial.print("pwm = ");
         if(charger.currentState->isOff())
@@ -419,6 +414,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
         
         Serial.print("OUT Temp = ");    Serial.println(sensors.values.temperature);
         Serial.print("SYS Temp = ");    Serial.print(sensors.boardTemperature());
+        Serial.print("PVF = ");    Serial.print(sensors.values.PVvoltageFloat);
     }
     else if(L=='s'){
       StoreHarvestingData(currentTime);

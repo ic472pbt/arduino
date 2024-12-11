@@ -15,6 +15,7 @@
 */
 class PWM {
   private:
+    bool isOff;
     IIRFilter& 
       filter;  // Reference to an IIRFilter instance
 
@@ -28,10 +29,12 @@ class PWM {
     PWM(IIRFilter& filterInstance) : filter(filterInstance), mpptDuty(0), duty(0) {}
         
     void shutdown(){
+      isOff = true;
       Timer1.pwm(PWM_PIN, 0);
     }
 
     void resume(){
+      isOff = false;
       Timer1.pwm(PWM_PIN, duty);
     }
     
@@ -39,6 +42,7 @@ class PWM {
         duty = min(1023, max(5, D));        // check limits of PWM duty cyle and set to PWM_MAX
                                             // if pwm is less than PWM_MIN then set it to PWM_MIN
         Timer1.pwm(PWM_PIN, duty);
+        isOff = duty > 0;
     }
 
     void initIIR(){
@@ -69,6 +73,10 @@ class PWM {
     void initialize(int T) {
         Timer1.initialize(T);     // Initialize Timer1 with a 40 µs period (~25 kHz)
         shutdown();               // Set initial PWM duty cycle to 0 on the PWM pin
+    }
+
+    bool isShuteddown() {
+      return isOff;
     }
 };
 #endif // PWM_H
