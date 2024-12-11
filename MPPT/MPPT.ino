@@ -413,7 +413,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
           Serial.println(charger.pwmController.duty/10.23);
         
         Serial.print("OUT Temp = ");    Serial.println(sensors.values.temperature);
-        Serial.print("SYS Temp = ");    Serial.print(sensors.boardTemperature());
+        Serial.print("SYS Temp = ");    Serial.println(sensors.boardTemperature());
         Serial.print("PVF = ");    Serial.print(sensors.values.PVvoltageFloat);
     }
     else if(L=='s'){
