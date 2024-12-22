@@ -7,10 +7,9 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
         IState* newState = this;
         charger.mpptReached = 0;
         int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-        if (sensor.PVvoltage + 0.2 < sensor.batteryV) {                      // if watts input from the solar panel is less than
-          newState = charger.goOff();                  // the minimum solar watts then 
-        }
-        else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {          // else if the battery voltage has gotten above the float
+        if (sensor.PVvoltage + 0.2 < sensor.batteryV) {                
+          newState = charger.goOff();                 
+        } else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {          // else if the battery voltage has gotten above the float
           newState = charger.goFloat();                               // battery float voltage go to the charger battery float state
         }
         else {              

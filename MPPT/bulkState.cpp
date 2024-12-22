@@ -21,7 +21,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         newState = charger.goScan();
       }
       else {                                    // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
-          unsigned long solarPower = (unsigned long)charger.rawCurrentIn * sensor.rawBatteryV;
+          unsigned long solarPower = (unsigned long)sensor.rawCurrentIn * sensor.rawBatteryV;
           if(charger.mpptReached == 1 || charger.startTracking){
             if(currentTime - lastTrackingTime > 29900 || charger.startTracking){
                // do perturbation

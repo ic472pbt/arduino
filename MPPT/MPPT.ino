@@ -339,7 +339,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
     char L = Serial.read();        
     if(L=='c'){ // calibration data request      
         Serial.print(" mDuty:");      Serial.print(charger.pwmController.mpptDuty);    
-        Serial.print(" IN curr:");    Serial.print(charger.rawCurrentIn + sensors.inCurrentOffset);    
+        Serial.print(" IN curr:");    Serial.print(sensors.values.rawCurrentIn + sensors.inCurrentOffset);    
         Serial.print(" OUT curr:");   Serial.print(sensors.values.rawCurrentOut + sensors.outCurrentOffset);    
         Serial.print(" PWM:");        Serial.print(charger.pwmController.duty);
         Serial.print(" RT1:");        Serial.print(analogRead(RT1));    

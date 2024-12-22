@@ -92,21 +92,21 @@ class Sensors {
       }
       
       if(currentADCpin == CURRENT_IN_SENSOR && ADS.isReady()){
-        charger.rawCurrentIn = ADS.getValue() - inCurrentOffset;
+        values.rawCurrentIn = ADS.getValue() - inCurrentOffset;
         currentADCpin += 1;
         ADS.setGain(1);
         ADS.requestADC(currentADCpin);
         if(currentGain == 2){
-          values.currentInput = charger.rawCurrentIn * CURRENT_IN_LOW_FACTOR;
-          if(charger.rawCurrentIn > 200) {currentGain = 1; inCurrentOffset = CURRENT_OFFSET/2;}
+          values.currentInput = values.rawCurrentIn * CURRENT_IN_LOW_FACTOR;
+          if(values.rawCurrentIn > 200) {currentGain = 1; inCurrentOffset = CURRENT_OFFSET/2;}
         }
         else {
-          values.currentInput = charger.rawCurrentIn * CURRENT_IN_FACTOR;
+          values.currentInput = values.rawCurrentIn * CURRENT_IN_FACTOR;
          
-          if(charger.rawCurrentIn < 78) {currentGain = 2; inCurrentOffset = CURRENT_OFFSET;}
+          if(values.rawCurrentIn < 78) {currentGain = 2; inCurrentOffset = CURRENT_OFFSET;}
         }
         values.batteryIsmooth = IIR2(values.batteryIsmooth, values.currentInput);
-        values.rawPower = values.rawBatteryV * charger.rawCurrentIn;
+        values.rawPower = values.rawBatteryV * values.rawCurrentIn;
         IOC = values.currentInput  > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
       }
       

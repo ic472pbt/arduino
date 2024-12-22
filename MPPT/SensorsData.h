@@ -6,6 +6,7 @@ struct SensorsData {
     int
       floatVoltageRaw = MAX_BAT_VOLTS_RAW,  // float or absorb    
       rawBatteryV           = 0,           // SYSTEM PARAMETER - 
+      rawCurrentIn          = 0,           // current to the battery
       rawCurrentOut         = 0;           // SYSTEM PARAMETER -     
     unsigned long 
       rawPower              = 0;  

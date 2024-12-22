@@ -28,8 +28,7 @@ private:
 
 public:
     int 
-      powerCompensation     = 0,
-      rawCurrentIn          = 0,           // SYSTEM PARAMETER - 
+      powerCompensation     = 0,      
       rawSolarV             = 0,           // SYSTEM PARAMETER - 
       tempCompensationRaw   = 0;           // SYSTEM PARAMETER - Voltage offset for ambient temperature
     byte
