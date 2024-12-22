@@ -22,8 +22,9 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
           // detect reverse current
           if (sensor.rawCurrentIn <= 0) {     
             newState = charger.goOff(currentTime);              
-          }        
-          else if (sensor.rawBatteryV > effectiveBound) {                    // If we've charged the battery above the float voltage                   
+          } else if(charger.sol_watts <= LOW_SOL_WATTS){
+            newState = charger.goOn();;
+          } else if (sensor.rawBatteryV > effectiveBound) {                    // If we've charged the battery above the float voltage                   
             int delta = (sensor.rawBatteryV - effectiveBound) + charger.stepsDown * 4; 
             // Serial.print(batteryV);Serial.print("decrease "); Serial.println(delta);
             incrementsCounter = 0;

@@ -4,12 +4,14 @@
 
 IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) 
  {
-        IState* newState = this;
+        IState* newState;
         charger.mpptReached = 0;
         int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
         // detect reverse current
         if (sensor.rawCurrentIn <= 0) {                
           newState = charger.goOff(currentTime);                 
+        } else if(charger.sol_watts <= LOW_SOL_WATTS){
+          newState = this;
         } else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {          // else if the battery voltage has gotten above the float
           newState = charger.goFloat();                               // battery float voltage go to the charger battery float state
         } else {              
