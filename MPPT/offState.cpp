@@ -4,13 +4,13 @@
 
 IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) 
 {
-      IState* newState = this;
+      IState* newState;
       int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
 
       charger.mpptReached = 0;
-      if (charger.off_count > 0) {                                  // this means that we run through the off state OFF_NUM of times with out doing
-          charger.off_count--;                                        // anything, this is to allow the battery voltage to settle down to see if the  
-      }                                                     // battery has been disconnected
+      if (currentTime - offTime < OFF_MIN_INTERVAL) {                              
+          newState = this;                          
+      }                                                   
       else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {
           newState = charger.goFloat();                         // if battery voltage is still high and solar volts are high
       }    

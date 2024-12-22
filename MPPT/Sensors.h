@@ -75,7 +75,7 @@ class Sensors {
           charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
           // charger.powerCapMode = true;      
-          charger.currentState = charger.goOff();
+          charger.currentState = charger.goOff(currentTime);
         }
       }
 

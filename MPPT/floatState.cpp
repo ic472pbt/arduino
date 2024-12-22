@@ -19,8 +19,9 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
             }
           } else charger.absorptionStartTime == 0;
           
-          if (sensor.PVvoltage + 0.2 < sensor.batteryV) {        // if watts input from the solar panel is less than
-            newState = charger.goOff();                     // the minimum solar watts then it is getting dark so
+          // detect reverse current
+          if (sensor.rawCurrentIn <= 0) {     
+            newState = charger.goOff(currentTime);              
           }        
           else if (sensor.rawBatteryV > effectiveBound) {                    // If we've charged the battery above the float voltage                   
             int delta = (sensor.rawBatteryV - effectiveBound) + charger.stepsDown * 4; 

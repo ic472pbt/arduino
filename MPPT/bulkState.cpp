@@ -6,8 +6,9 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
 {
       IState* newState = this;
       int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-      if (sensor.PVvoltage + 0.2 < sensor.batteryV) {               // if watts input from the solar panel is less than          
-          newState = charger.goOff();                              // the minimum solar watts then it is getting dark so
+      // detect reverse current
+      if (sensor.rawCurrentIn <= 0) {         
+          newState = charger.goOff(currentTime);                             
       }
       else if (sensor.rawBatteryV > floatV - charger.powerCompensation){
         charger.pwmController.storeMpptDuty();

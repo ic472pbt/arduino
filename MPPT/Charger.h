@@ -3,7 +3,6 @@
 #define CHARGER_H
 
 #define ABSORPTION_TIME_LIMIT 14400000L  // max 4h of topping up per day
-#define OFF_NUM 9                   // number of iterations of off charger state
 
 #include "SensorsData.h"
 #include "PWM.h"
@@ -32,7 +31,6 @@ public:
       rawSolarV             = 0,           // SYSTEM PARAMETER - 
       tempCompensationRaw   = 0;           // SYSTEM PARAMETER - Voltage offset for ambient temperature
     byte
-        off_count = OFF_NUM,
         mpptReached        = 1,
         stepsDown          = 0;    // number of scan steps to decrease on overpower event
     bool 
@@ -66,7 +64,7 @@ public:
 
     void Charge(SensorsData& sensor, unsigned long currentTime){
         if(ERR>0){
-          currentState = goOff();
+          currentState = goOff(currentTime);
           pwmController.incrementDuty(-100);
           pwmController.shutdown();
           return;
@@ -98,8 +96,8 @@ public:
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
     
     // transit the charger to the off state
-    IState* goOff(){
-      off_count = OFF_NUM;                  
+    IState* goOff(unsigned long currentTime){
+      offInstance.offTime = currentTime;              
       pwmController.shutdown(); 
       return &offInstance;
     }

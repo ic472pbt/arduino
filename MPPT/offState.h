@@ -1,6 +1,7 @@
 #ifndef OFFSTATE_H
 #define OFFSTATE_H
 #define LVD 10.8
+#define OFF_MIN_INTERVAL 30000U // 0.5 min
 
 #include "IState.h"
 class Charger;  // Forward declaration of Charger
@@ -9,7 +10,9 @@ class Charger;  // Forward declaration of Charger
 //      off in this state so that power from the battery doesn't leak back into the solar panel. 
 class offState : public IState {
   public:
-    offState() : IState("off") {}
+      unsigned long 
+        offTime;
+      offState() : IState("off") {}
     
     IState* Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) override ;
     bool isFloat() override {return true;}
