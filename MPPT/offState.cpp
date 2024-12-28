@@ -4,18 +4,17 @@
 
 IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) 
 {
-      IState* newState;
+      IState* newState = this;;
       int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
 
       charger.mpptReached = 0;
-      if (currentTime - offTime < OFF_MIN_INTERVAL) {                              
-          newState = this;                          
+      if (currentTime - offTime > OFF_MIN_INTERVAL) {                              
+        if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {
+            newState = charger.goFloat();                         
+        } else if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > sensor.batteryV)) {
+            newState = charger.goScan();
+        }                                    
       }                                                   
-      else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {
-          newState = charger.goFloat();                         // if battery voltage is still high and solar volts are high
-      }    
-      else if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > sensor.batteryV)) {
-          newState = charger.goScan();
-      }
+
       return newState;
     }
