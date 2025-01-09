@@ -96,7 +96,8 @@ public:
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
     
     void alterPeriod(unsigned int newPeriod){
-      pwmController.setPeriod(newPeriod);
+      if(currentState->isFloat() || currentState->isBulk())
+        pwmController.setPeriod(newPeriod);
     }
 
     // transit the charger to the off state

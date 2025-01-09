@@ -87,7 +87,7 @@ unsigned long
 
               
 bool
-  spreadSpectrum = true,
+  spreadSpectrum = false,
   LCDcycling     = true;
 
 int   
@@ -154,6 +154,7 @@ void setup() {
   
   // delay(100);
   sensors.initialRead();
+  randomSeed(1);
 }
 
 void loop() {  
@@ -164,17 +165,14 @@ void loop() {
   
   unsigned long currentTime=millis();  
   if(spreadSpectrum){
-    if(currentTime - lastRampUpTime > SS_RAMP_DELAY){
-      ssDelta = pwmPeriod >= 43 
+    if(currentTime - lastRampUpTime >= SS_RAMP_DELAY){
+      ssDelta = (pwmPeriod >= 43) 
         ? -1 
-        : (pwmPeriod <= 37 ? 1 : ssDelta);
+        : ((pwmPeriod <= 37) ? 1 : ssDelta);
       pwmPeriod += ssDelta;
-      charger.alterPeriod(pwmPeriod);
       lastRampUpTime = currentTime;
     }
-    else{
-      charger.alterPeriod(pwmPeriod + (charger.rawSolarV & 1) ? 1 : -1);
-    }
+    charger.alterPeriod(pwmPeriod + random(-2,3));
   }
   sensors.Read(currentTime);
   Read_Sensors(currentTime);

@@ -41,12 +41,12 @@ class PWM {
     void setDuty(unsigned int D) {
         duty = min(1023, max(5, D));        // check limits of PWM duty cyle and set to PWM_MAX
                                             // if pwm is less than PWM_MIN then set it to PWM_MIN
-        Timer1.setPwmDuty(PWM_PIN, duty);
+        Timer1.pwm(PWM_PIN, duty);
         isOff = duty == 0;
     }
 
     void setPeriod(unsigned int newPeriod) __attribute__((always_inline)){
-      Timer1.setPeriod(newPeriod);
+      Timer1.pwm(PWM_PIN, duty, newPeriod);
     }
     
     void initIIR(){
@@ -76,7 +76,7 @@ class PWM {
     // Initialization function to set up Timer1 settings
     void initialize(int T) {
         Timer1.initialize(T);     // Initialize Timer1 with a 40 µs period (~25 kHz)
-        Timer1.pwm(PWM_PIN, 0);   // Set initial PWM duty cycle to 0 on the PWM pin
+        // Timer1.pwm(PWM_PIN, 0);   // Set initial PWM duty cycle to 0 on the PWM pin
         shutdown();               
     }
 
