@@ -1,4 +1,3 @@
-
 #define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
 #define ABSORPTION_START_V 12.6     // switch to absorption mode if bellow
 #define ABSORPTION_START_V_RAW 844 // 564  // switch to absorption mode if bellow
@@ -35,6 +34,8 @@
 #define CURRENT_IN_FACTOR 0.025429352 //<- GAIN2 GAIN1 -> 0.08180441 // 0.03828995 // 2A = 24
 #define CURRENT_IN_LOW_FACTOR 0.009773528
 
+#define SS_RAMP_DELAY 20
+
 #include "IIRFilter.h"
 #include "Charger.h"
 #include "Sensors.h"
@@ -66,7 +67,9 @@ byte
   ERR         = 0;           // SYSTEM PARAMETER - 
            
 unsigned int 
-  LCDmap[6];                 // LCD memory
+  pwmPeriod           = 37,          // us
+  LCDmap[6];                         // LCD memory
+
 bool
 BNC                   = 0,           // SYSTEM PARAMETER -  
 REC                   = 0,           // SYSTEM PARAMETER - 
@@ -84,11 +87,12 @@ unsigned long
 
               
 bool
+  spreadSpectrum = true,
   LCDcycling     = true;
 
 int   
-  avgStoreTS            = 0,           // SYSTEM PARAMETER - Temperature Sensor uses non invasive averaging, this is used an accumulator for mean averaging
-  avgCountTS             = 50;        //  CALIB PARAMETER - Temperature Sensor Average Sampling Count
+  avgStoreTS            = 0,         // SYSTEM PARAMETER - Temperature Sensor uses non invasive averaging, this is used an accumulator for mean averaging
+  avgCountTS            = 50;        //  CALIB PARAMETER - Temperature Sensor Average Sampling Count
 
 
 float   
@@ -124,7 +128,7 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
   ReadHarvestingData();
-  charger.initializePWM(40);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
+  charger.initializePWM(pwmPeriod);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   sensors.initialize();
   
   cli(); // disable global interrupts
@@ -153,9 +157,25 @@ void setup() {
 }
 
 void loop() {  
-  static unsigned long mainTimestamp = 0;           //SYSTEM PARAMETER -
+  static unsigned long 
+    lastRampUpTime = 0,
+    lastSensorsUpdateTime = 0;
+  static char ssDelta = 1;
   
   unsigned long currentTime=millis();  
+  if(spreadSpectrum){
+    if(currentTime - lastRampUpTime > SS_RAMP_DELAY){
+      ssDelta = pwmPeriod >= 43 
+        ? -1 
+        : (pwmPeriod <= 37 ? 1 : ssDelta);
+      pwmPeriod += ssDelta;
+      charger.alterPeriod(pwmPeriod);
+      lastRampUpTime = currentTime;
+    }
+    else{
+      charger.alterPeriod(pwmPeriod + (charger.rawSolarV & 1) ? 1 : -1);
+    }
+  }
   sensors.Read(currentTime);
   Read_Sensors(currentTime);
   /*Serial.print(duty); Serial.print(" "); // Serial.print(ADS.readADC(CURRENT_IN_SENSOR));
@@ -164,11 +184,11 @@ Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
  
   Device_Protection(currentTime, sensors.values.batteryV); 
-  int wait = charger.currentState->isFloat() ? 5000 : 200;
-  if(charger.controlFloat){ wait = 0;charger.controlFloat = false;}
-  if(currentTime - mainTimestamp > wait){ // inertia delay
+  int sensorDelay = charger.currentState->isFloat() ? 5000 : 200;
+  if(charger.controlFloat){ sensorDelay = 0;charger.controlFloat = false;}
+  if(currentTime - lastSensorsUpdateTime > sensorDelay){ // sensors inertia delay
     charger.Charge(sensors.values, currentTime);
-    mainTimestamp = currentTime;
+    lastSensorsUpdateTime = currentTime;
   }
   print_data(sensors.values.PVvoltage, currentTime);
   // float loadV = load_voltage();
@@ -179,16 +199,9 @@ delay(200);*/
 
 void Read_Sensors(unsigned long currentTime){  
   static bool catchAbsorbtion = false;
-  charger.sol_watts = max(sensors.values.batteryV*sensors.values.currentInput, 0.0);  // ignore negative power supply current
   
   // disable for high accum capacity
   // powerCompensation = 0; 
-  
-  // enable power correction bias to mitigate overproduction issue 
-  charger.powerCompensation = 
-    (charger.finishEqualize || !charger.stepsDown > 0) ? 0 
-    : min(39, max(0, (int)(0.5 * (charger.sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
-
   
    //TIME DEPENDENT SENSOR DATA COMPUTATION
   unsigned int 

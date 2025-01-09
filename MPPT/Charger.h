@@ -95,6 +95,10 @@ public:
     void Reverse() {dirrection *= -1;}  
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
     
+    void alterPeriod(unsigned int newPeriod){
+      pwmController.setPeriod(newPeriod);
+    }
+
     // transit the charger to the off state
     IState* goOff(unsigned long currentTime){
       offInstance.offTime = currentTime;              
