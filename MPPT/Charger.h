@@ -24,7 +24,9 @@ private:
     onState onInstance;
     scanState scanInstance;
     bulkState bulkInstance;
-
+    
+    unsigned int 
+      period;
 public:
     int 
       powerCompensation     = 0,      
@@ -96,13 +98,16 @@ public:
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
     
     void alterFrequency(float sysTemperature){
-      static unsigned int period;
       if(currentState->isFloat() || currentState->isBulk()){
         // adjust PWM frequency according the sys temperature
         // 60kHz (17us) if temperature < 20deg, 15kHz (67us) if temperature > 45deg
         unsigned int newPeriod = max(17, min(67, ((int)sysTemperature - 20) * 2 + 17));
         if(newPeriod != period){ period = newPeriod; pwmController.setPeriod(period); }
       }
+    }
+
+    unsigned int frequency(){
+      return 1000000L/period;
     }
 
     // transit the charger to the off state
