@@ -95,9 +95,14 @@ public:
     void Reverse() {dirrection *= -1;}  
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
     
-    void alterPeriod(unsigned int newPeriod){
-      if(currentState->isFloat() || currentState->isBulk())
-        pwmController.setPeriod(newPeriod);
+    void alterFrequency(float sysTemperature){
+      static unsigned int period;
+      if(currentState->isFloat() || currentState->isBulk()){
+        // adjust PWM frequency according the sys temperature
+        // 60kHz (17us) if temperature < 20deg, 15kHz (67us) if temperature > 45deg
+        unsigned int newPeriod = max(17, min(67, ((int)sysTemperature - 20) * 2 + 17));
+        if(newPeriod != period){ period = newPeriod; pwmController.setPeriod(period); }
+      }
     }
 
     // transit the charger to the off state

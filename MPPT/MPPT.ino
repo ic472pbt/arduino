@@ -67,7 +67,7 @@ byte
   ERR         = 0;           // SYSTEM PARAMETER - 
            
 unsigned int 
-  pwmPeriod           = 37,          // us
+  pwmPeriod           = 17,          // us
   LCDmap[6];                         // LCD memory
 
 bool
@@ -87,7 +87,6 @@ unsigned long
 
               
 bool
-  spreadSpectrum = false,
   LCDcycling     = true;
 
 int   
@@ -132,8 +131,6 @@ void setup() {
   sensors.initialize();
   
   cli(); // disable global interrupts
-  // initialize Timer1
-  // TCCR1B = TCCR1B & B11111000 | B00000001; // PWM 31372.55 Hz on 9 10
 
   TCCR2A = 0; // Set entire TCCR2A register to 0
   TCCR2B = 0; // Same for TCCR2B
@@ -154,7 +151,6 @@ void setup() {
   
   // delay(100);
   sensors.initialRead();
-  randomSeed(1);
 }
 
 void loop() {  
@@ -164,16 +160,6 @@ void loop() {
   static char ssDelta = 1;
   
   unsigned long currentTime=millis();  
-  if(spreadSpectrum){
-    if(currentTime - lastRampUpTime >= SS_RAMP_DELAY){
-      ssDelta = (pwmPeriod >= 43) 
-        ? -1 
-        : ((pwmPeriod <= 37) ? 1 : ssDelta);
-      pwmPeriod += ssDelta;
-      lastRampUpTime = currentTime;
-    }
-    charger.alterPeriod(pwmPeriod + random(-2,3));
-  }
   sensors.Read(currentTime);
   Read_Sensors(currentTime);
   /*Serial.print(duty); Serial.print(" "); // Serial.print(ADS.readADC(CURRENT_IN_SENSOR));

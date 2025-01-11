@@ -57,7 +57,9 @@ class Sensors {
         TS =  TSFilter.smooth(analogRead(RT2));
         BTS = BTSFilter.smooth(analogRead(RT1));
         SetTempCompensation();
-        OTE = Voltage2Temp(BTS) > MAX_BOARD_TEMPERATURE;  // overheating protection
+        float btemp = boardTemperature();
+        charger.alterFrequency(btemp);
+        OTE = btemp > MAX_BOARD_TEMPERATURE;  // overheating protection
         lastTempTime = currentTime;
       }
 
@@ -72,7 +74,7 @@ class Sensors {
     
         // If we've charged the battery above the MAX voltage 0.4V rising overpower event
         if (values.rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
-          charger.stepsDown += 4;
+          if(charger.stepsDown <= 40) charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
           // charger.powerCapMode = true;      
           charger.currentState = charger.goOff(currentTime);
@@ -136,7 +138,7 @@ class Sensors {
     float boardTemperature(){
       return Voltage2Temp(BTS) + BOARD_TEMP_OFFSET;
     }
-    
+
     void initialize(){
       ADS.begin();
       ADS.setGain(1);  // 4.096V max
