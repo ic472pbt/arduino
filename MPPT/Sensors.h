@@ -145,8 +145,10 @@ class Sensors {
     }
 
     void initialRead(){
-      TSFilter.reset(analogRead(RT2));
-      BTSFilter.reset(analogRead(RT1));      
+      TS = analogRead(RT2);
+      BTS = analogRead(RT1);
+      TSFilter.reset(TS);
+      BTSFilter.reset(BTS);      
       SetTempCompensation();
       values.rawBatteryV = ADS.readADC(BAT_V_SENSOR);
       charger.rawSolarV =   ADS.readADC(SOL_V_SENSOR);
