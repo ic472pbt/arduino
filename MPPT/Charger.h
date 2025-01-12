@@ -97,11 +97,11 @@ public:
     void Reverse() {dirrection *= -1;}  
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
     
-    void alterFrequency(float sysTemperature){
+    void alterFrequency(float sysPower){
       if(currentState->isFloat() || currentState->isBulk()){
-        // adjust PWM frequency according the sys temperature
-        // 60kHz (17us) if temperature < 20deg, 15kHz (67us) if temperature > 45deg
-        unsigned int newPeriod = max(17, min(67, ((int)sysTemperature - 20) * 2 + 17));
+        // adjust PWM frequency according the sys power
+        // 80kHz (13us) if power > 500W, 16kHz (63us) if power < 50W
+        unsigned int newPeriod = max(13, min(63, 63 - ((int)sysPower - 50)/9));
         if(newPeriod != period){ period = newPeriod; pwmController.setPeriod(period); }
       }
     }

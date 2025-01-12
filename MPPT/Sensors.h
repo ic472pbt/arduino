@@ -57,9 +57,7 @@ class Sensors {
         TS =  TSFilter.smooth(analogRead(RT2));
         BTS = BTSFilter.smooth(analogRead(RT1));
         SetTempCompensation();
-        float btemp = boardTemperature();
-        charger.alterFrequency(btemp);
-        OTE = btemp > MAX_BOARD_TEMPERATURE;  // overheating protection
+        OTE = boardTemperature() > MAX_BOARD_TEMPERATURE;  // overheating protection
         lastTempTime = currentTime;
       }
 
@@ -112,6 +110,7 @@ class Sensors {
 
         // update power value
         charger.sol_watts = max(values.batteryV * values.currentInput, 0.0);  // ignore negative power supply current
+        charger.alterFrequency(charger.sol_watts);
         // enable power correction bias to mitigate overproduction issue 
         charger.powerCompensation = 
           (charger.finishEqualize || !charger.stepsDown > 0) ? 0 
