@@ -74,6 +74,7 @@ class Sensors {
         if (values.rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
           if(charger.stepsDown <= 40) charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
+          charger.setMaxFloatCurrent(values.currentInput * 0.5);
           // charger.powerCapMode = true;      
           charger.currentState = charger.goOff(currentTime);
         }

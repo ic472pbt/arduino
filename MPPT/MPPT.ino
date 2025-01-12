@@ -1,7 +1,6 @@
 #define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
 #define ABSORPTION_START_V 12.6     // switch to absorption mode if bellow
 #define ABSORPTION_START_V_RAW 844 // 564  // switch to absorption mode if bellow
-#define CURRENT_ABSOLUTE_MAX 40.0    //  CALIB PARAMETER - Maximum Current The System Can Handle
 
 #define SELF_CONSUMPTION 0.045      // static loss (A)
 #define TEMP_COMPENSATION_CF 0.024     // V / 12V / degC / cp = 25deg

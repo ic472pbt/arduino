@@ -1,6 +1,7 @@
 // floatState.h
 #ifndef FLOATSTATE_H
 #define FLOATSTATE_H
+#define CURRENT_ABSOLUTE_MAX 40.0    //  CALIB PARAMETER - Maximum Current The System Can Handle
 
 #include "IState.h"
 class Charger;  // Forward declaration of Charger
@@ -14,7 +15,9 @@ class floatState : public IState {
 private:
   byte
     incrementsCounter = 0;
-public:    
+public: 
+    float 
+      maxCurrent = CURRENT_ABSOLUTE_MAX;  // max allowed current in float mode    
     floatState() : IState("float") {}
     IState* Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) override ;
     bool isFloat() override {return true;}

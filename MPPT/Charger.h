@@ -97,6 +97,10 @@ public:
     void Reverse() {dirrection *= -1;}  
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
 
+    void setMaxFloatCurrent(float currentLimit){
+      floatInstance.maxCurrent = currentLimit;
+    }
+
     // transit the charger to the off state
     IState* goOff(unsigned long currentTime){
       offInstance.offTime = currentTime;              
@@ -125,6 +129,7 @@ public:
     
     // transit to the scan state
     IState* goScan(){
+      setMaxFloatCurrent(CURRENT_ABSOLUTE_MAX);
       startTracking = true;
       dirrection = 1;
       pwmController.setMinDuty();
