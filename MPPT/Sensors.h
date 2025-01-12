@@ -110,7 +110,7 @@ class Sensors {
 
         // update power value
         charger.sol_watts = max(values.batteryV * values.currentInput, 0.0);  // ignore negative power supply current
-        charger.alterFrequency(charger.sol_watts);
+
         // enable power correction bias to mitigate overproduction issue 
         charger.powerCompensation = 
           (charger.finishEqualize || !charger.stepsDown > 0) ? 0 

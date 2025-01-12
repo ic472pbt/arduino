@@ -67,7 +67,7 @@ byte
   ERR         = 0;           // SYSTEM PARAMETER - 
            
 unsigned int 
-  pwmPeriod           = 17,          // us
+  pwmPeriod           = 33,          // us
   LCDmap[6];                         // LCD memory
 
 bool
@@ -162,8 +162,8 @@ void loop() {
   unsigned long currentTime=millis();  
   sensors.Read(currentTime);
   Read_Sensors(currentTime);
-  /*Serial.print(duty); Serial.print(" "); // Serial.print(ADS.readADC(CURRENT_IN_SENSOR));
-Serial.print("load: "); 
+ // Serial.print(pwmPeriod); Serial.println(" "); // Serial.print(ADS.readADC(CURRENT_IN_SENSOR));
+/*Serial.print("load: "); 
 Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
  
@@ -339,8 +339,6 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" IN curr:");    Serial.print(sensors.values.rawCurrentIn + sensors.inCurrentOffset);    
         Serial.print(" OUT curr:");   Serial.print(sensors.values.rawCurrentOut + sensors.outCurrentOffset);    
         Serial.print(" PWM:");        Serial.print(charger.pwmController.duty);
-        Serial.print(" RT1:");        Serial.print(analogRead(RT1));    
-        Serial.print(" f:");          Serial.print(charger.frequency());    
         Serial.print(" ABS(h):");     Serial.print(charger.absorptionAccTime/3600000.0);
         Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(charger.tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
