@@ -102,7 +102,7 @@ public:
         // adjust PWM frequency according the sys power
         // 80kHz (13us) if power > 500W, 16kHz (63us) if power < 50W
         unsigned int newPeriod = max(13, min(63, (int)(10000.0 / (1.42 * (sysPower - 50.0)  + 160.0))));
-        if(newPeriod != period){ period = newPeriod; pwmController.setPeriod(period); }
+        // if(newPeriod != period){ period = newPeriod; pwmController.setPeriod(period); }
       }
     }
 

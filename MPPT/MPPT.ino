@@ -214,8 +214,8 @@ int prevValue = 0;
 void monitor_button(){
   
     button_mode value = read_button();
-    if(prevValue-curValue > 200 && value == plus) charger.pwmController.incrementDuty(2);
-    if(prevValue-curValue > 200 && value == minus) charger.pwmController.incrementDuty(-2);
+    if(prevValue-curValue > 200 && value == plus) charger.pwmController.setPeriod(++pwmPeriod); //charger.pwmController.incrementDuty(2);
+    if(prevValue-curValue > 200 && value == minus) charger.pwmController.setPeriod(--pwmPeriod); // charger.pwmController.incrementDuty(-2);
     if(prevValue-curValue > 200 && value == both) LCDcycling = !LCDcycling;
     prevValue = curValue;
 }
