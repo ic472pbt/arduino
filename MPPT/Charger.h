@@ -101,6 +101,10 @@ public:
       floatInstance.maxCurrent = currentLimit;
     }
 
+    float getMaxFloatCurrent(){
+      return floatInstance.maxCurrent;
+    }
+
     // transit the charger to the off state
     IState* goOff(unsigned long currentTime){
       offInstance.offTime = currentTime;              
@@ -129,7 +133,6 @@ public:
     
     // transit to the scan state
     IState* goScan(){
-      setMaxFloatCurrent(CURRENT_ABSOLUTE_MAX);
       startTracking = true;
       dirrection = 1;
       pwmController.setMinDuty();

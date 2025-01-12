@@ -48,6 +48,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
                 charger.absorptionAccTime += currentTime - charger.absorptionStartTime;
                 charger.absorptionStartTime = 0;
               }
+              maxCurrent = CURRENT_ABSOLUTE_MAX;
               newState = charger.goScan();        // switch back into bulk state to keep the voltage up
             }
           }
