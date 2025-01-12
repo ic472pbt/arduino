@@ -75,7 +75,7 @@ class Sensors {
           if(charger.stepsDown <= 40) charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
           charger.setMaxFloatCurrent(values.currentInput * 0.5);
-          // charger.powerCapMode = true;      
+          charger.powerCapMode = true;      
           charger.currentState = charger.goOff(currentTime);
         }
       }

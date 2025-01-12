@@ -38,7 +38,7 @@ public:
     bool 
       finishEqualize = false,
       startTracking = true,  
-//      powerCapMode = false,
+      powerCapMode = false,
       controlFloat = false;
     unsigned long
       absorptionStartTime   = 0,           //SYSTEM PARAMETER -
