@@ -29,18 +29,16 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
           }else if (sensor.rawBatteryV > effectiveBound) { // If we've charged the battery above the float voltage
             int delta = (sensor.rawBatteryV - effectiveBound) + charger.stepsDown * 4; 
             // Serial.print(batteryV);Serial.print("decrease "); Serial.println(delta);
-            incrementsCounter = 0;
+            decrementEvent = true;
             charger.pwmController.incrementDuty(-delta);                                      // down
           }else if (sensor.rawBatteryV <= effectiveBound) {                    // else if the battery voltage is less than the float voltage - 0.1
-            //int delta = 2; // (batteryV - (floatVoltage + tempCompensation - powerCompensation)) / 0.01;
-            // Serial.print(batteryV);Serial.print("increase "); Serial.println(delta);
-            if(charger.pwmController.duty < charger.pwmController.mpptDuty){   // protect duty from drifting up
-              incrementsCounter++;
-              charger.pwmController.incrementDuty(2);                                              // up
-              // There is less excess power when there are consecutive compensated increments. Begin stepsDown decrease 
-              if(incrementsCounter >= charger.stepsDown * 2){
-                incrementsCounter = 0;
-                charger.stepsDown = max(0, charger.stepsDown - 1);
+            if(decrementEvent){ // begin voltage monitoring
+              decrementEvent = false;
+              prevVoltage = sensor.rawBatteryV;
+            }else{
+              if( (prevVoltage - sensor.rawBatteryV > 0) && (charger.pwmController.duty < charger.pwmController.mpptDuty) ){ // protect duty from excess drifting up
+                  prevVoltage = sensor.rawBatteryV;
+                  charger.pwmController.incrementDuty(2);   // up
               }
             }
             if (sensor.rawBatteryV < floatV - 80){ //(floatVoltage + tempCompensation - 1.2)) {   // if the voltage drops because of added load,
@@ -49,6 +47,8 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
                 charger.absorptionStartTime = 0;
               }
               maxCurrent = CURRENT_ABSOLUTE_MAX;
+              // There is less excess power when there are consecutive compensated increments. Begin stepsDown decrease 
+              charger.stepsDown = max(0, charger.stepsDown - 1);
               newState = charger.goScan();        // switch back into bulk state to keep the voltage up
             }
           }

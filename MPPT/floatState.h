@@ -13,8 +13,10 @@ class Charger;  // Forward declaration of Charger
 //      into the bulk charging mode.
 class floatState : public IState {
 private:
-  byte
-    incrementsCounter = 0;
+  bool
+    decrementEvent;
+  int 
+    prevVoltage;
 public: 
     float 
       maxCurrent = CURRENT_ABSOLUTE_MAX;  // max allowed current in float mode    

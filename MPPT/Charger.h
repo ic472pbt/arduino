@@ -9,6 +9,7 @@
 #include "IState.h"
 #include "floatState.h"
 #include "scanState.h"
+#include "scanCurrentState.h"
 #include "bulkState.h"
 #include "onState.h"
 #include "offState.h"
@@ -23,6 +24,7 @@ private:
     offState offInstance;
     onState onInstance;
     scanState scanInstance;
+    scanCurrentState scanCInstance;
     bulkState bulkInstance;
     
     unsigned int 
@@ -135,8 +137,15 @@ public:
     IState* goScan(){
       startTracking = true;
       dirrection = 1;
-      pwmController.setMinDuty();
+      // pwmController.setMinDuty();
       return &scanInstance;
-    }        
+    }   
+
+    // transit to the current limit scan state
+    IState* goCls(){
+      pwmController.setMinDuty();
+      scanCInstance.currentLimit = floatInstance.maxCurrent;
+      return &scanCInstance;
+    }         
 };
 #endif
