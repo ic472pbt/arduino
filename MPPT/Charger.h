@@ -137,13 +137,13 @@ public:
     IState* goScan(){
       startTracking = true;
       dirrection = 1;
-      // pwmController.setMinDuty();
+      pwmController.shutdown();
       return &scanInstance;
     }   
 
     // transit to the current limit scan state
     IState* goCls(){
-      pwmController.setMinDuty();
+      pwmController.setDuty(5);
       scanCInstance.currentLimit = floatInstance.maxCurrent;
       return &scanCInstance;
     }         
