@@ -5,10 +5,10 @@
 IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) 
 {
           IState* newState = this;
-          int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-          int effectiveBound = floatV - charger.powerCompensation;
+          int floatVoltageLimit = charger.floatVoltageTempCorrectedRaw(sensor);
+          int effectiveBound = floatVoltageLimit - charger.powerCompensation;
           charger.mpptReached = 0;
-          if(!charger.finishEqualize && sensor.rawBatteryV > floatV - 25){
+          if(!charger.finishEqualize && sensor.rawBatteryV > floatVoltageLimit - 25){
             if(charger.absorptionStartTime == 0) charger.absorptionStartTime = currentTime;
             else {
               long interval = currentTime - charger.absorptionStartTime;
@@ -41,7 +41,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
                   charger.pwmController.incrementDuty(2);   // up
               }
             }
-            if (sensor.rawBatteryV < floatV - 80){ //(floatVoltage + tempCompensation - 1.2)) {   // if the voltage drops because of added load,
+            if (sensor.rawBatteryV < floatVoltageLimit - 80){ //(floatVoltage + tempCompensation - 1.2)) {   // if the voltage drops because of added load,
               if(!charger.finishEqualize && charger.absorptionStartTime > 0){
                 charger.absorptionAccTime += currentTime - charger.absorptionStartTime;
                 charger.absorptionStartTime = 0;

@@ -2,7 +2,7 @@
 #ifndef CHARGER_H
 #define CHARGER_H
 
-#define ABSORPTION_TIME_LIMIT 14400000L  // max 4h of topping up per day
+#define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
 
 #include "SensorsData.h"
 #include "PWM.h"
@@ -28,9 +28,10 @@ private:
     bulkState bulkInstance;
     
     unsigned int 
+      sensorDelay = 200, 
       period;
 public:
-    int 
+    int
       powerCompensation     = 0,      
       rawSolarV             = 0,           // SYSTEM PARAMETER - 
       tempCompensationRaw   = 0;           // SYSTEM PARAMETER - Voltage offset for ambient temperature
@@ -40,9 +41,10 @@ public:
     bool 
       finishEqualize = false,
       startTracking = true,  
-      powerCapMode = false,
-      controlFloat = false;
+      powerCapMode = false;
+
     unsigned long
+      lastSensorsUpdateTime = 0,
       absorptionStartTime   = 0,           //SYSTEM PARAMETER -
       absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
     float 
@@ -67,32 +69,37 @@ public:
     }
 
     void Charge(SensorsData& sensor, unsigned long currentTime){
-        if(ERR>0){
-          currentState = goOff(currentTime);
-          pwmController.incrementDuty(-100);
-          pwmController.shutdown();
-          return;
-        }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
-          REC=0;
-          pwmController.setMinDuty(); 
-          currentState = goFloat();
-          StoreHarvestingData(currentTime);
-          // allow absorbtion
-          absorptionAccTime = 0;       
-          absorptionStartTime = 0;
-          sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
-          finishEqualize = false; 
-//          powerCapMode = false;
-        }
-  
-        if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
-          sensor.floatVoltageRaw = BATT_FLOAT_RAW;  
-          finishEqualize = true;
-        }
+        if(currentTime - lastSensorsUpdateTime > sensorDelay){ // sensors inertia delay
+          lastSensorsUpdateTime = currentTime;
 
-        IState* newState = currentState->Handle(*this, sensor, currentTime);
-        if (newState != currentState) {
-          currentState = newState; // Update to the new state if there's a transition
+          if(ERR>0){
+            currentState = goOff(currentTime);
+            pwmController.incrementDuty(-100);
+            pwmController.shutdown();
+            return;
+          }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
+            REC=0;
+            pwmController.setMinDuty(); 
+            currentState = goFloat();
+            StoreHarvestingData(currentTime);
+            // allow absorbtion
+            absorptionAccTime = 0;       
+            absorptionStartTime = 0;
+            sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
+            finishEqualize = false; 
+  //          powerCapMode = false;
+          }
+    
+          if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
+            sensor.floatVoltageRaw = BATT_FLOAT_RAW;  
+            finishEqualize = true;
+          }
+
+          IState* newState = currentState->Handle(*this, sensor, currentTime);
+          if (newState != currentState) {          
+            sensorDelay = currentState->isFloat() ? 5000 : 200;
+            currentState = newState; // Update to the new state if there's a transition
+          }
         }
     }
 
@@ -122,7 +129,6 @@ public:
 
     // transit to the float state
     IState* goFloat(){
-      controlFloat = true;
       pwmController.resume();
       return &floatInstance;
     }

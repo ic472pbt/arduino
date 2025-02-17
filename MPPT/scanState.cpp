@@ -4,16 +4,20 @@
 IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) 
  {
         static IState* newState;
-        if(cycleNum > 0 &&  sensor.PVvoltage > 0){
+        if(cycleNum == 0){
+          charger.pwmController.shutdown();
+          cycleNum++;   
+          newState = this;
+        } else if(cycleNum > 0 && sensor.PVvoltage >= sensor.batteryV){
           cycleNum = 0;
-          bestDuty = (unsigned int)(sensor.batteryV * 1023.0 / sensor.PVvoltage) + 70; // try to guess best duty offset (pt) = 0.175 (pt) * battery capacity (Ah)
+          bestDuty = (unsigned int)(sensor.batteryV * 1023.0 / sensor.PVvoltage) + 83; // try to guess best duty offset (pt) = 0.175 (pt) * battery capacity (Ah)
           charger.pwmController.setDuty(bestDuty);
           charger.pwmController.initIIR();
           newState = charger.goBulk(currentTime);
           charger.startTracking = true;
-        }else if(cycleNum > 100){
+        } else if(cycleNum > 20){
           newState = charger.goOff(currentTime);
-        }else{
+        } else {
           cycleNum++;   
           newState = this;       
           /* old algorithm

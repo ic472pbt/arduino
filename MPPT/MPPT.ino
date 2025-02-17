@@ -154,8 +154,7 @@ void setup() {
 
 void loop() {  
   static unsigned long 
-    lastRampUpTime = 0,
-    lastSensorsUpdateTime = 0;
+    lastRampUpTime = 0;    
   static char ssDelta = 1;
   
   unsigned long currentTime=millis();  
@@ -167,12 +166,7 @@ Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
  
   Device_Protection(currentTime, sensors.values.batteryV); 
-  int sensorDelay = charger.currentState->isFloat() ? 5000 : 200;
-  if(charger.controlFloat){ sensorDelay = 0;charger.controlFloat = false;}
-  if(currentTime - lastSensorsUpdateTime > sensorDelay){ // sensors inertia delay
-    charger.Charge(sensors.values, currentTime);
-    lastSensorsUpdateTime = currentTime;
-  }
+  charger.Charge(sensors.values, currentTime);
   print_data(sensors.values.PVvoltage, currentTime);
   // float loadV = load_voltage();
   

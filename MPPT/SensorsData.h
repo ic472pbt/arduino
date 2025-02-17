@@ -9,7 +9,8 @@ struct SensorsData {
       rawCurrentIn          = 0,           // current to the battery
       rawCurrentOut         = 0;           // SYSTEM PARAMETER -     
     unsigned long 
-      rawPower              = 0;  
+      rawPowerPrev          = 0,           // track power spikes
+      rawPower              = 0;           // raw power value
     float
       temperature           = 0.0,           // SYSTEM PARAMETER -
       currentInput          = 0.0000,        // SYSTEM PARAMETER - Current to the battery

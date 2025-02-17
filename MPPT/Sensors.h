@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #define RT1 A2
 #define RT2 A3
 #define BOARD_TEMP_OFFSET -1.72              // CALIB PARAMETER offset board temperature relative to ambient
@@ -5,7 +6,8 @@
 #define MIN_SYSTEM_VOLTAGE    10.0          //  CALIB PARAMETER - 
 #define SOL_V_SENSOR_FACTOR 0.04226373 // 0.06352661 // 19.23 = 455
 #define CURRENT_OFFSET 382 
-
+#define ONE_SECOND 1000ul                   // 1000 ms 
+#define TEN_SECONDS 10000ul                 // 10000 ms 
 
 #include "SensorsData.h"
 #include "Charger.h"
@@ -21,13 +23,16 @@ class Sensors {
       TSFilter, BTSFilter;  
     Charger& 
       charger;
+    bool
+      sensorsUpdated = false;  // full cycle reading completed
     byte
-      currentADCpin = 0,
-      currentGain   = 2;
+      currentADCpin  = 0,
+      currentGain    = 2;
     unsigned int
       BTS                   = 0u,        // SYSTEM PARAMETER - Raw board temperature sensor ADC value
       TS                    = 0u;        // SYSTEM PARAMETER - Raw temperature sensor ADC value
     unsigned long 
+      powerProbeTime        = 0ul,
       catchAbsTime          = 0ul,
       lastTempTime          = 0ul;
 
@@ -51,7 +56,7 @@ class Sensors {
 
     void Read(unsigned long currentTime){
       /////////// TEMPERATURE SENSORS /////////////
-      if(currentTime - lastTempTime > 10000ul){
+      if(currentTime - lastTempTime > TEN_SECONDS){
         //TEMPERATURE SENSORS - Lite Averaging
         
         TS =  TSFilter.smooth(analogRead(RT2));
@@ -107,6 +112,12 @@ class Sensors {
         }
         values.batteryIsmooth = IIR2(values.batteryIsmooth, values.currentInput);
         values.rawPower = values.rawBatteryV * values.rawCurrentIn;
+        sensorsUpdated = true;
+        if(currentTime - powerProbeTime >= ONE_SECOND){
+          values.rawPowerPrev = values.rawPower;
+          powerProbeTime = currentTime;
+        }
+        
         IOC = values.currentInput  > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
 
         // update power value
@@ -157,5 +168,13 @@ class Sensors {
       values.PVvoltageSmooth = charger.rawSolarV * SOL_V_SENSOR_FACTOR;
       // ADS.setGain(1); // 4.096V max
       ADS.requestADC(currentADCpin);
+    }
+
+    // Detect full cycle of sensors readings
+    bool SensorsRoundCompleted(){
+      if(sensorsUpdated){
+        sensorsUpdated = false;
+        return true;
+      } else return sensorsUpdated;
     }
 };
