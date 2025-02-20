@@ -22,7 +22,6 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         newState = charger.goScan();
       }
       else {                                    // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
-          unsigned long solarPower = (unsigned long)sensor.rawCurrentIn * sensor.rawBatteryV;
           if(charger.mpptReached == 1 || charger.startTracking){
             if(currentTime - lastTrackingTime > 29900 || charger.startTracking){
                // do perturbation
@@ -32,25 +31,18 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
               charger.pwmController.incrementDuty(delta);
               lastTrackingTime = currentTime;
               charger.mpptReached = 0; // ! reset MPPT
-              rawPowerPrev = solarPower;   
+              rawPowerPrev = sensor.rawPower;   
               voltageInputPrev = charger.rawSolarV;           
               charger.startTracking = false;
             }
           }else{
-        /*   Serial.print("power before: "); Serial.print(rawPowerPrev); 
-            Serial.print("power after: "); Serial.println(solarPower); 
-            Serial.print("voltage before: "); Serial.print(voltageInputPrev); 
-            Serial.print("voltage after: "); Serial.print(rawSolarV);
-            Serial.print("pwm: "); Serial.print(duty); 
-            Serial.print("delta: "); Serial.println(delta); */
-           if(solarPower > rawPowerPrev){
+           if(sensor.rawPower > rawPowerPrev){
                 charger.pwmController.incrementDuty(delta);
-                rawPowerPrev = solarPower;
+                rawPowerPrev = sensor.rawPower;
            } else {
                 charger.pwmController.incrementDuty(-delta);
                 delta /= 2;
-                if(delta == 0){                                                // MPP Reached 
-                  // charger.pwmController.incrementDuty(-charger.stepsDown * 4); // protection against repeated overpower events                                            
+                if(delta == 0){                                                // MPP Reached                                         
                   charger.pwmController.smoothDuty();                          // smooth duty value a bit
                   charger.Reverse();                                           // Change the direction for the next tracking.
                   charger.mpptReached = 1;                                     // indicate MPP reached
