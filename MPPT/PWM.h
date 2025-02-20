@@ -15,7 +15,10 @@
 */
 class PWM {
   private:
-    bool isOff;
+    unsigned int
+      storedDuty;
+    bool 
+      isOff;
     IIRFilter& 
       filter;  // Reference to an IIRFilter instance
 
@@ -29,24 +32,19 @@ class PWM {
     PWM(IIRFilter& filterInstance) : filter(filterInstance), mpptDuty(0), duty(0) {}
         
     void shutdown(){
-      isOff = true;
-      Timer1.stop();
+      storedDuty = duty;
+      setDuty();
     }
 
     void resume() {
-      isOff = false;
-      Timer1.resume();
+      setDuty(storedDuty);
     }
     
-    void setDuty(unsigned int D) {
-        duty = min(1023, max(5, D));        // check limits of PWM duty cyle and set to PWM_MAX
+    void setDuty(unsigned int D = 0) {
+        duty = min(1023, D);        // check limits of PWM duty cyle and set to PWM_MAX
                                             // if pwm is less than PWM_MIN then set it to PWM_MIN
         Timer1.pwm(PWM_PIN, duty);
         isOff = duty == 0;
-    }
-
-    void setPeriod(unsigned int newPeriod) __attribute__((always_inline)){
-      Timer1.pwm(PWM_PIN, duty, newPeriod);
     }
     
     void initIIR(){

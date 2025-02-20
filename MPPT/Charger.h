@@ -73,9 +73,8 @@ public:
           lastSensorsUpdateTime = currentTime;
 
           if(ERR>0){
-            currentState = goOff(currentTime);
             pwmController.incrementDuty(-100);
-            pwmController.shutdown();
+            currentState = goOff(currentTime);
             return;
           }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
             REC=0;
@@ -143,13 +142,12 @@ public:
     IState* goScan(){
       startTracking = true;
       dirrection = 1;
-      pwmController.shutdown();
       return &scanInstance;
     }   
 
     // transit to the current limit scan state
     IState* goCls(){
-      pwmController.setDuty(5);
+      pwmController.setMinDuty();
       scanCInstance.currentLimit = floatInstance.maxCurrent;
       return &scanCInstance;
     }         
