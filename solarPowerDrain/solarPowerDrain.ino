@@ -6,7 +6,7 @@
 
 #define LOW_BAT_THR 802      // 11.7V
 #define INVERTOR_ON_THR 910  // 13.5V 
-#define INVERTOR_OFF_THR 816 // 11.9V 
+#define INVERTOR_OFF_THR 795 // 11.69V 
 #define CHARGER_ON_THR 850   // 12.4V good
 #define CHARGER_OFF_THR 900  // 13.4V good
 // 20 minutes
