@@ -9,19 +9,20 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           bestPower = cycleNum;
           cycleNum++;   
           newState = this;
-        } else if(cycleNum > 11){
+        } else if(cycleNum > 10){
           cycleNum = 0;
           // bestDuty = (unsigned int)(sensor.batteryV * 1023.0 / sensor.PVvoltageFloat) + 55; // try to guess best duty offset (pt) = 0.175 (pt) * battery capacity (Ah)
+            Serial.print("d ");
+            Serial.println(bestDuty);
           charger.pwmController.setDuty(bestDuty);
           charger.pwmController.initIIR();
           newState = charger.goBulk(currentTime);
           charger.startTracking = true;
         } else {
           cycleNum++;   
-          newState = this;                 
-          unsigned long solarPower = (unsigned long)sensor.rawCurrentIn * sensor.rawBatteryV;
-          if(solarPower > bestPower){
-            bestPower = solarPower;
+          newState = this;  
+          if(sensor.rawPower > bestPower){
+            bestPower = sensor.rawPower;
             bestDuty = charger.pwmController.duty;
           }
           charger.pwmController.incrementDuty(SCAN_STEP);   

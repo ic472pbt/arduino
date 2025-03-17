@@ -111,7 +111,7 @@ class Sensors {
           if(values.rawCurrentIn < 78) {currentGain = 2; inCurrentOffset = CURRENT_OFFSET;}
         }
         values.batteryIsmooth = IIR2(values.batteryIsmooth, values.currentInput);
-        values.rawPower = (unsigned long)values.rawBatteryV * values.rawCurrentIn;
+        values.rawPower = (unsigned long)values.rawBatteryV * max(0, values.rawCurrentIn);
         sensorsUpdated = true;
         if(currentTime - powerProbeTime >= ONE_SECOND){
           values.rawPowerPrev = values.rawPower;

@@ -69,6 +69,7 @@ public:
     }
 
     void Charge(SensorsData& sensor, unsigned long currentTime){
+        sensorDelay = currentState->isFloat() ? 5000 : 200;
         if(currentTime - lastSensorsUpdateTime > sensorDelay){ // sensors inertia delay
           lastSensorsUpdateTime = currentTime;
 
@@ -96,7 +97,6 @@ public:
 
           IState* newState = currentState->Handle(*this, sensor, currentTime);
           if (newState != currentState) {          
-            sensorDelay = currentState->isFloat() ? 5000 : 200;
             currentState = newState; // Update to the new state if there's a transition
           }
         }
