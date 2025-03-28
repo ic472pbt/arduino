@@ -35,9 +35,8 @@ public:
       powerCompensation     = 0,      
       rawSolarV             = 0,           // SYSTEM PARAMETER - 
       tempCompensationRaw   = 0;           // SYSTEM PARAMETER - Voltage offset for ambient temperature
-    char
+    byte
         mpptReached        = 1,
-        dirrection         = 1,    // Public property for accessing flip
         stepsDown          = 0;    // number of scan steps to decrease on overpower event
     bool 
       finishEqualize = false,
@@ -50,6 +49,7 @@ public:
       absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
     float 
       sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
+    char dirrection = 1;  // Public property for accessing flip
     // object variable that holds state for charger state machine
     IState* currentState;
     PWM pwmController;  // PWM instance created within Charger
