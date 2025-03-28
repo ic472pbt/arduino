@@ -13,7 +13,7 @@
  * duty cycle and provides methods for turning PWM on and off, as well as for limiting the PWM duty 
  * cycle within specified bounds.
 */
-class PWM {
+class PWM {  
   private:
     unsigned int
       storedDuty;

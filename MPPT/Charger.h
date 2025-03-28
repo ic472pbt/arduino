@@ -128,7 +128,7 @@ public:
 
     // transit to the float state
     IState* goFloat(){
-      pwmController.resume();
+      if(pwmController.isShuteddown()) pwmController.resume();
       return &floatInstance;
     }
 
