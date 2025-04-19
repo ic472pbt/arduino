@@ -113,6 +113,11 @@ public:
       return floatInstance.maxCurrent;
     }
 
+    // check if in pv updating cycle
+    bool isUpdatingPV(){
+      return scanInstance.PVupdate;
+    }
+
     // transit the charger to the off state
     IState* goOff(unsigned long currentTime){
       offInstance.offTime = currentTime;              

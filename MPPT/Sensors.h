@@ -92,9 +92,12 @@ class Sensors {
         ADS.setGain(currentGain); // read current IN
         ADS.requestADC(currentADCpin);
         values.PVvoltage = charger.rawSolarV * SOL_V_SENSOR_FACTOR;
-        if(charger.pwmController.isShuteddown()) values.PVvoltageFloat = values.PVvoltage; // update float PV value
-        values.PVvoltageSmooth = IIR2(values.PVvoltageSmooth, values.PVvoltage);
-        if(values.PVvoltage + 0.5 < values.batteryV) {IUV=1;REC=1;}else{IUV=0;}   //IUV - INPUT UNDERVOLTAGE: Input voltage is below max battery charging voltage (for charger mode only)     
+        // update float PV value any time in PWM off state
+        if(charger.pwmController.isShuteddown()) values.PVvoltageFloat = values.PVvoltage; 
+        // opdate PV voltage not in updating PV voltage state
+        if(!charger.isUpdatingPV()) values.PVvoltageSmooth = IIR2(values.PVvoltageSmooth, values.PVvoltage); 
+        //IUV - INPUT UNDERVOLTAGE: Input voltage is below max battery charging voltage (for charger mode only)     
+        if(values.PVvoltage + 0.5 < values.batteryV) {IUV=1;REC=1;}else{IUV=0;}   
       }
       
       if(currentADCpin == CURRENT_IN_SENSOR && ADS.isReady()){
