@@ -16,7 +16,7 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
           newState = charger.goFloat();                               // battery float voltage go to the charger battery float state
         } else {              
           // else if we are making more power than low solar watts figure out what the pwm
-          newState = charger.goScan();
+          newState = charger.goScan(false);
           charger.pwmController.setMinDuty();
           charger.pwmController.initIIR();
         }

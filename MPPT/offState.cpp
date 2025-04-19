@@ -15,7 +15,7 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
         }else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {
             newState = charger.goFloat();                         
         }else if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > sensor.batteryV)) {
-            newState = charger.goScan();
+            newState = charger.goScan(false);
         }                                    
       }                                                   
 

@@ -139,7 +139,8 @@ public:
     }  
     
     // transit to the scan state
-    IState* goScan(){
+    IState* goScan(bool PVupdate){
+      scanInstance.PVupdate = PVupdate;
       startTracking = true;
       dirrection = 1;
       return &scanInstance;

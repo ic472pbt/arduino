@@ -16,6 +16,7 @@ class scanState : public IState {
     unsigned int bestDuty = 0; 
 
   public:
+    bool PVupdate;
     scanState() : IState("scan"), cycleNum(0), bestPower(0), bestDuty(0) {}
         
     IState* Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) override;

@@ -49,7 +49,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
               maxCurrent = CURRENT_ABSOLUTE_MAX;
               // There is less excess power when there are consecutive compensated increments. Begin stepsDown decrease 
               charger.stepsDown = max(0, charger.stepsDown - 1);
-              newState = charger.goScan();        // switch back into bulk state to keep the voltage up
+              newState = charger.goScan(false);        // switch back into bulk state to keep the voltage up
             }
           }
           return newState;

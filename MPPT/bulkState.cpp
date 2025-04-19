@@ -19,7 +19,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
       }
       else if(currentTime - lastRescanTime > RESCAN_INTERVAL || charger.pwmController.duty > 818){
         lastRescanTime = currentTime;
-        newState = charger.goScan();
+        newState = charger.goScan(charger.pwmController.duty <= 818);
       }
       else {                                    // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
           if(charger.mpptReached == 1 || charger.startTracking){
