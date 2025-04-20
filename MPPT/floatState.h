@@ -2,6 +2,7 @@
 #ifndef FLOATSTATE_H
 #define FLOATSTATE_H
 #define CURRENT_ABSOLUTE_MAX 40.0    //  CALIB PARAMETER - Maximum Current The System Can Handle
+#define MAX_WAITING_AFTER_RECOVERY 60000 // 1 minute
 
 #include "IState.h"
 class Charger;  // Forward declaration of Charger
@@ -13,7 +14,10 @@ class Charger;  // Forward declaration of Charger
 //      into the bulk charging mode.
 class floatState : public IState {
 private:
+  unsigned int
+    waitingStartTime;
   bool
+    isWaitingAfterRecovery,
     decrementEvent;
   int 
     prevVoltage;

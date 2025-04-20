@@ -74,12 +74,11 @@ public:
           lastSensorsUpdateTime = currentTime;
 
           if(ERR>0){
-            pwmController.incrementDuty(-100);
             currentState = goOff(currentTime);
             return;
           }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
             REC=0;
-            pwmController.setMinDuty(); 
+            //pwmController.setMinDuty(); 
             currentState = goFloat();
             StoreHarvestingData(currentTime);
             // allow absorbtion

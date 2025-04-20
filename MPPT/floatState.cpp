@@ -26,11 +26,16 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
             } else if(sensor.currentInput < maxCurrent){
               charger.pwmController.incrementDuty(10);      // current stabilization
             } else{
+              charger.pwmController.incrementDuty(-5);
+              isWaitingAfterRecovery = true;
+              waitingStartTime = currentTime;
               charger.batteryAtFullCapacity = false;        // go to normal voltage stabilization      
             }
           } else if (sensor.rawCurrentIn <= 0) {     // detect reverse current
+            isWaitingAfterRecovery = false;
             newState = charger.goOff(currentTime);              
           }else if(charger.sol_watts <= LOW_SOL_WATTS){
+            isWaitingAfterRecovery = false;
             newState = charger.goOn();
           }else if (sensor.rawBatteryV > effectiveBound) { // If we've charged the battery above the float voltage
             int delta = (sensor.rawBatteryV - effectiveBound) + charger.stepsDown * 4; 
@@ -47,7 +52,9 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
                   charger.pwmController.incrementDuty(2);   // up
               }
             }
-            if (sensor.rawBatteryV < floatVoltageLimit - 80){ //(floatVoltage + tempCompensation - 1.2)) {   // if the voltage drops because of added load,
+             // if the voltage drops because of added load, and not after recovery to prevent early rescan
+            if (sensor.rawBatteryV < floatVoltageLimit - 80 && !(isWaitingAfterRecovery && currentTime-waitingStartTime < MAX_WAITING_AFTER_RECOVERY)){
+              isWaitingAfterRecovery = false;
               if(!charger.finishEqualize && charger.absorptionStartTime > 0){
                 charger.absorptionAccTime += currentTime - charger.absorptionStartTime;
                 charger.absorptionStartTime = 0;
