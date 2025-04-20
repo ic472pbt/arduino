@@ -19,13 +19,19 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
             }
           } else charger.absorptionStartTime == 0;
           
-          // detect reverse current
-          if (sensor.rawCurrentIn <= 0) {     
+          if(charger.batteryAtFullCapacity){
+            // off state recovery after overcharge
+            if(charger.pwmController.isShuteddown()){
+              charger.pwmController.slowResume();
+            } else if(sensor.currentInput < maxCurrent){
+              charger.pwmController.incrementDuty(10);      // current stabilization
+            } else{
+              charger.batteryAtFullCapacity = false;        // go to normal voltage stabilization      
+            }
+          } else if (sensor.rawCurrentIn <= 0) {     // detect reverse current
             newState = charger.goOff(currentTime);              
           }else if(charger.sol_watts <= LOW_SOL_WATTS){
             newState = charger.goOn();
-          }else if(sensor.currentInput > maxCurrent){ // current is above the limit
-            charger.pwmController.incrementDuty(-2);          
           }else if (sensor.rawBatteryV > effectiveBound) { // If we've charged the battery above the float voltage
             int delta = (sensor.rawBatteryV - effectiveBound) + charger.stepsDown * 4; 
             // Serial.print(batteryV);Serial.print("decrease "); Serial.println(delta);

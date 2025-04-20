@@ -41,7 +41,7 @@ public:
     bool 
       finishEqualize = false,
       startTracking = true,  
-      powerCapMode = false;
+      batteryAtFullCapacity = false;
 
     unsigned long
       lastSensorsUpdateTime = 0,
@@ -69,7 +69,7 @@ public:
     }
 
     void Charge(SensorsData& sensor, unsigned long currentTime){
-        sensorDelay = currentState->isFloat() ? 5000 : 200;
+        sensorDelay = (currentState->isFloat() && !batteryAtFullCapacity) ? 5000 : 200;
         if(currentTime - lastSensorsUpdateTime > sensorDelay){ // sensors inertia delay
           lastSensorsUpdateTime = currentTime;
 
@@ -139,6 +139,7 @@ public:
 
     // transit to the bulk state
     IState* goBulk(unsigned long currentTime){
+      batteryAtFullCapacity = false; // if went bulk, then battery is not full
       bulkInstance.lastRescanTime = currentTime;
       return &bulkInstance;
     }  

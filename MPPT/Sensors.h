@@ -80,7 +80,7 @@ class Sensors {
           if(charger.stepsDown <= 40) charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
           charger.setMaxFloatCurrent(values.currentInput * 0.66);
-          charger.powerCapMode = true;      
+          charger.batteryAtFullCapacity = true;      // if voltage surges, then battery is full
           charger.currentState = charger.goOff(currentTime);
         }
       }

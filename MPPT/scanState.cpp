@@ -9,7 +9,7 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           bestPower = cycleNum;
           cycleNum++;   
           newState = this;
-        } else if(cycleNum > 0 && PVupdate){
+        } else if(cycleNum > 1 && PVupdate){
           PVupdate = false;
           charger.pwmController.resume();
           newState = charger.goBulk(currentTime);

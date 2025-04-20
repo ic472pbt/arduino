@@ -9,10 +9,7 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
 
       charger.mpptReached = 0;
       if (currentTime - offTime > OFF_MIN_INTERVAL) { 
-        if( charger.powerCapMode) {
-            charger.powerCapMode = false;
-            newState = charger.goCls();         
-        }else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {
+        if (charger.batteryAtFullCapacity || ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV))) {
             newState = charger.goFloat();                         
         }else if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > sensor.batteryV)) {
             newState = charger.goScan(false);
