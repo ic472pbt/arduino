@@ -13,7 +13,6 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           PVupdate = false;
           charger.pwmController.resume();
           newState = charger.goBulk(currentTime);
-          charger.startTracking = true;
         } else if(cycleNum > 10){
           cycleNum = 0;
           // bestDuty = (unsigned int)(sensor.batteryV * 1023.0 / sensor.PVvoltageFloat) + 55; // try to guess best duty offset (pt) = 0.175 (pt) * battery capacity (Ah)
