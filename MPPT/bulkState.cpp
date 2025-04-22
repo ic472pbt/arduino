@@ -10,7 +10,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
       if (sensor.rawCurrentIn <= 0) {         
           newState = charger.goOff(currentTime);                             
       }
-      else if (sensor.rawBatteryV > floatV - charger.powerCompensation){
+      else if (sensor.rawBatteryV > floatV){
         charger.pwmController.storeMpptDuty();
         newState = charger.goFloat();              // battery float voltage go to the charger battery float state            
       }                          

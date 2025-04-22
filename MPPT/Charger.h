@@ -32,7 +32,6 @@ private:
       period;
 public:
     int
-      powerCompensation     = 0,      
       rawSolarV             = 0,           // SYSTEM PARAMETER - 
       tempCompensationRaw   = 0;           // SYSTEM PARAMETER - Voltage offset for ambient temperature
     byte
@@ -146,7 +145,6 @@ public:
     // transit to the scan state
     IState* goScan(bool PVupdate){
       scanInstance.PVupdate = PVupdate;
-      startTracking = true;
       dirrection = 1;
       return &scanInstance;
     }   

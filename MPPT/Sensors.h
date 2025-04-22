@@ -127,9 +127,9 @@ class Sensors {
         charger.sol_watts = max(values.batteryV * values.currentInput, 0.0);  // ignore negative power supply current
 
         // enable power correction bias to mitigate overproduction issue 
-        charger.powerCompensation = 
+       /* charger.powerCompensation = 
           (charger.finishEqualize || !charger.stepsDown > 0) ? 0 
-          : min(39, max(0, (int)(0.5 * (charger.sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR)));
+          : min(39, max(0, (int)(0.5 * (charger.sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR))); */
       }
       
       /////////// LOAD SENSORS /////////////

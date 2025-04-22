@@ -43,7 +43,7 @@ class PWM {
     }
 
     void setDuty(unsigned int D = 0) {
-        duty = min(1023, D);        // check limits of PWM duty cyle and set to PWM_MAX                                    
+        duty = min(1023, D);                             
         Timer1.pwm(PWM_PIN, duty);
     }
     

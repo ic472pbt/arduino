@@ -6,7 +6,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
 {
           IState* newState = this;
           int floatVoltageLimit = charger.floatVoltageTempCorrectedRaw(sensor);
-          int effectiveBound = floatVoltageLimit - charger.powerCompensation;
+          int effectiveBound = floatVoltageLimit; // - charger.powerCompensation;
           charger.mpptReached = 0;
           if(!charger.finishEqualize && sensor.rawBatteryV > floatVoltageLimit - 25){
             if(charger.absorptionStartTime == 0) charger.absorptionStartTime = currentTime;
