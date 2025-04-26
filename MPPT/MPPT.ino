@@ -174,6 +174,8 @@ delay(200);*/
   LCDinfo(currentTime);
 }
 
+void (*resetFunc)(void) = 0;
+
 void Read_Sensors(unsigned long currentTime){  
   static bool catchAbsorbtion = false;
   
@@ -407,6 +409,13 @@ void print_data(float solarVoltage, unsigned long currentTime){
     else if(L=='s'){
       StoreHarvestingData(currentTime);
       Serial.print("ok");
+    }
+    else if(L=='0'){
+      StoreHarvestingData(currentTime);
+      resetFunc(); // This will reset the Arduino
+    }
+    else if(L=='z'){
+      charger.pwmController.setDuty();
     }
     else if(L=='r'){ //reset harvest data
       ResetHarvestingData();

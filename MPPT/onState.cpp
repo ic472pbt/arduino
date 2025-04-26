@@ -1,33 +1,44 @@
 #include "SensorsData.h"
 #include "onState.h"
 #include "Charger.h"
+#include "StateFlow.h"
 
 IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) 
  {
-        IState* newState;
-        charger.mpptReached = 0;
-        int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-        // detect reverse current
-        if (sensor.rawCurrentIn <= 0) {                
-          newState = charger.goOff(currentTime);  
-        } else if(isRescaningPV){
-          newState = this;
+    StateFlow<IState*> flow(this);
+    charger.mpptReached = 0;
+    int floatV = charger.floatVoltageTempCorrectedRaw(sensor);    
+    flow
+      .thenIf([&] { bool reverseCurrentDetected = sensor.rawCurrentIn <= 0; return reverseCurrentDetected; },
+            [&] {
+              return charger.goOff(currentTime);
+            }
+      )
+      .doIf([&] { return isRescaningPV; },
+        [&] {
           charger.pwmController.resume();
           isRescaningPV = false;
-        } else if(currentTime - lastRescanTime > RESCAN_INTERVAL){
+        }
+      )
+      .doIf([&] { bool shouldRescan = currentTime - lastRescanTime > RESCAN_INTERVAL; return shouldRescan; },
+        [&] {
           lastRescanTime = currentTime;
           charger.pwmController.shutdown();  
           isRescaningPV = true;
-          newState = this;
-        } else if(charger.sol_watts <= LOW_SOL_WATTS){
-          newState = this;
-        } else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {          // else if the battery voltage has gotten above the float
-          newState = charger.goFloat();                               // battery float voltage go to the charger battery float state
-        } else {              
+        }
+       )
+      .thenIf([&] { bool shouldGoFloat = (sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV); return shouldGoFloat; },
+        [&] {
+          return charger.goFloat();                               // battery float voltage go to the charger battery float state
+        }
+      )
+      .thenIf([&] { bool shouldGoBulk = charger.sol_watts > LOW_SOL_WATTS; return shouldGoBulk;},
+        [&] {              
           // else if we are making more power than low solar watts figure out what the pwm
-          newState = charger.goScan(false);
           charger.pwmController.setMinDuty();
           charger.pwmController.initIIR();
+          return charger.goScan(false);
         }
-        return newState;
+      );
+      return flow.get();
     }   
