@@ -1,7 +1,6 @@
 #ifndef BULKSTATE_H
 #define BULKSTATE_H
 #define MAX_PWM_DELTA 4
-#define RESCAN_INTERVAL 300000U // 5 min
 
 #include "IState.h"
 class Charger;  // Forward declaration of Charger

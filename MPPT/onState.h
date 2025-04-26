@@ -10,6 +10,11 @@ class Charger;  // Forward declaration of Charger
 //      watts input is too low for the bulk charging state but not low enough to go into the off state. 
 //      In this state we just set the pwm = 99.9% to get the most of low amount of power available.
 class onState : public IState {
+  private:
+      unsigned long 
+        lastRescanTime;
+      bool
+        isRescaningPV = false;
   public:
     onState() : IState("on") {}
     

@@ -9,7 +9,16 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
         int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
         // detect reverse current
         if (sensor.rawCurrentIn <= 0) {                
-          newState = charger.goOff(currentTime);                 
+          newState = charger.goOff(currentTime);  
+        } else if(isRescaningPV){
+          newState = this;
+          charger.pwmController.resume();
+          isRescaningPV = false;
+        } else if(currentTime - lastRescanTime > RESCAN_INTERVAL){
+          lastRescanTime = currentTime;
+          charger.pwmController.shutdown();  
+          isRescaningPV = true;
+          newState = this;
         } else if(charger.sol_watts <= LOW_SOL_WATTS){
           newState = this;
         } else if ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV)) {          // else if the battery voltage has gotten above the float

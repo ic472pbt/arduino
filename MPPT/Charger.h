@@ -3,6 +3,8 @@
 #define CHARGER_H
 
 #define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
+#define RESCAN_INTERVAL 300000U //  PV sensing every 5 min. Switch off PWM controler for this.
+
 
 #include "SensorsData.h"
 #include "PWM.h"
