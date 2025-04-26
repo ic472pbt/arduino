@@ -1,4 +1,3 @@
-#define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
 #define ABSORPTION_START_V 12.6     // switch to absorption mode if bellow
 #define ABSORPTION_START_V_RAW 844 // 564  // switch to absorption mode if bellow
 

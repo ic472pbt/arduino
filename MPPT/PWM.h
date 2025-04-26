@@ -55,10 +55,6 @@ class PWM {
       setDuty(MIN_ACTIVE_DUTY);
     }
 
-    void setMaxDuty(){
-      setDuty(MAX_DUTY);
-    }
-
     void smoothDuty(){
       setDuty(filter.smooth(duty));  
     }

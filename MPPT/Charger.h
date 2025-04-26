@@ -4,6 +4,7 @@
 
 #define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
 #define RESCAN_INTERVAL 300000U //  PV sensing every 5 min. Switch off PWM controler for this.
+#define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
 
 
 #include "SensorsData.h"
@@ -49,7 +50,10 @@ public:
       absorptionStartTime   = 0,           //SYSTEM PARAMETER -
       absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
     float 
-      sol_watts;                     // SYSTEM PARAMETER - Input power (solar power) in Watts
+      // min PV voltage to start charging
+      minPVVoltage          = BATT_FLOAT,  
+      // Input solar power in Watts
+      sol_watts;                     
     char dirrection = 1;  // Public property for accessing flip
     // object variable that holds state for charger state machine
     IState* currentState;
@@ -120,6 +124,7 @@ public:
 
     // transit the charger to the off state
     IState* goOff(unsigned long currentTime){
+      mpptReached = 0;
       offInstance.offTime = currentTime;              
       pwmController.shutdown(); 
       return &offInstance;
@@ -127,7 +132,8 @@ public:
 
     // transit to on state
     IState* goOn(){
-      pwmController.setMaxDuty();
+      mpptReached = 0;
+      pwmController.setDuty(MAX_DUTY);
       return &onInstance;
     }
 
