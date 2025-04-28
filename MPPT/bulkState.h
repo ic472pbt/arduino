@@ -17,6 +17,7 @@ class bulkState : public IState {
       stepSize = MAX_PWM_DELTA;
     int 
       delta = 10,      
+      batteryVprevRaw  = 0,
       voltageInputPrev = 0;
   public:
     unsigned long 

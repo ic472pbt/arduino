@@ -1,7 +1,6 @@
 #ifndef ONSTATE_H
 #define ONSTATE_H
 #define LOW_SOL_WATTS 5.00         // low bulk mode limit
-#define BATT_FLOAT_RAW 924 // 617          // raw battery voltage we want to stop charging at
 
 #include "IState.h"
 class Charger;  // Forward declaration of Charger

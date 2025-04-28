@@ -3,9 +3,9 @@
 #define CHARGER_H
 
 #define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
-#define RESCAN_INTERVAL 300000U //  PV sensing every 5 min. Switch off PWM controler for this.
+#define RESCAN_INTERVAL 299000U //  PV sensing every 5 min. Switch off PWM controler for this.
 #define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
-
+#define BATT_FLOAT_RAW 924 // 617          // raw battery voltage we want to stop charging at
 
 #include "SensorsData.h"
 #include "PWM.h"
@@ -41,7 +41,7 @@ public:
         mpptReached        = 1,
         stepsDown          = 0;    // number of scan steps to decrease on overpower event
     bool 
-      finishEqualize = false,
+      finishAbsorbing = false,
       startTracking = true,  
       batteryAtFullCapacity = false;
 
@@ -90,13 +90,12 @@ public:
             absorptionAccTime = 0;       
             absorptionStartTime = 0;
             sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
-            finishEqualize = false; 
-  //          powerCapMode = false;
+            finishAbsorbing = false; 
           }
     
           if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
             sensor.floatVoltageRaw = BATT_FLOAT_RAW;  
-            finishEqualize = true;
+            finishAbsorbing = true;
           }
 
           IState* newState = currentState->Handle(*this, sensor, currentTime);
@@ -107,12 +106,16 @@ public:
     }
 
     void Reverse() {dirrection *= -1;}  
-    int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return sensor.floatVoltageRaw + tempCompensationRaw; }
+    int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return BATT_FLOAT_RAW + tempCompensationRaw; }
+    int maxVoltageTempCorrectedRaw(SensorsData& sensor) { return MAX_BAT_VOLTS_RAW + tempCompensationRaw; }
+    bool isAbsorbing(SensorsData& sensor) { return !finishAbsorbing && sensor.rawBatteryV > floatVoltageTempCorrectedRaw(sensor); }
+    bool absorbtionStarted() { return absorptionStartTime > 0; }
 
     void setMaxFloatCurrent(float currentLimit){
       floatInstance.maxCurrent = currentLimit;
     }
-
+    
+    
     float getMaxFloatCurrent(){
       return floatInstance.maxCurrent;
     }
@@ -139,6 +142,7 @@ public:
 
     // transit to the float state
     IState* goFloat(){
+      mpptReached = 0;
       if(pwmController.isShuteddown()) pwmController.resume();
       return &floatInstance;
     }
