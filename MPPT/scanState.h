@@ -1,6 +1,6 @@
 #ifndef SCANSTATE_H
 #define SCANSTATE_H
-#define SCAN_STEP 90  
+#define SCAN_STEP 50  
 #include "IState.h"
 class Charger;  // Forward declaration of Charger
 

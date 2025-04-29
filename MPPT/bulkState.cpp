@@ -73,13 +73,14 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
     )
     .doIf([&] { bool powerIsRising = sensor.rawPower > rawPowerPrev; return powerIsRising; },
       [&]{
-        charger.pwmController.incrementDuty(delta);
         rawPowerPrev = sensor.rawPower;
+        charger.pwmController.incrementDuty(delta);
       }
     )
     .doIf([&] { bool powerIsNotRising = sensor.rawPower <= rawPowerPrev; return powerIsNotRising; },
-      [&] {                                    
-        charger.pwmController.incrementDuty(-delta);
+      [&] {
+        delta = -delta;          
+        charger.pwmController.incrementDuty(delta);
         delta /= 2;
         if(delta == 0){                                                // MPP Reached                                         
           charger.pwmController.smoothDuty();                          // smooth duty value a bit
