@@ -3,7 +3,7 @@
 #define CHARGER_H
 
 #define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
-#define RESCAN_INTERVAL 299000U //  PV sensing every 5 min. Switch off PWM controler for this.
+#define RESCAN_INTERVAL 299500U //  PV sensing every 5 min. Switch off PWM controler for this.
 #define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
 #define BATT_FLOAT_RAW 924 // 617          // raw battery voltage we want to stop charging at
 

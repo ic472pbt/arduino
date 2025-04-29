@@ -59,14 +59,14 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
       [&]{
         if(currentTime - lastTrackingTime > 29900 || charger.startTracking){
           // do perturbation
+          rawPowerPrev = sensor.rawPower;   
+          voltageInputPrev = charger.rawSolarV;         
           stepSize = MAX_PWM_DELTA;
           delta = charger.dirrection * stepSize;
           charger.pwmController.initIIR();
           charger.pwmController.incrementDuty(delta);
           lastTrackingTime = currentTime;
           charger.mpptReached = 0; // ! reset MPPT
-          rawPowerPrev = sensor.rawPower;   
-          voltageInputPrev = charger.rawSolarV;           
           charger.startTracking = false;
         }
       }

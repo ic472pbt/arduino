@@ -8,11 +8,11 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
 
       if (currentTime - offTime > OFF_MIN_INTERVAL) { 
         int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-        if (charger.batteryAtFullCapacity || ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV))) {
-            newState = charger.goFloat();                         
-        }else if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > charger.minPVVoltage)) {
+        if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > charger.minPVVoltage)) {
             newState = charger.goScan(false);
-        }                                    
+        } else if (charger.batteryAtFullCapacity || ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV))) {
+            newState = charger.goFloat();                         
+        }
       }                                                   
 
       return newState;
