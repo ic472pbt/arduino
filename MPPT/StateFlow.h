@@ -27,7 +27,11 @@ public:
 
     template<typename Cond, typename Func>
     StateFlow& doIf(Cond condition, Func action) {
-        if (!changed && condition()) action();
+        if (!changed && condition()) 
+        {
+            action();
+            changed = true;
+        }
         return *this;
     }
 

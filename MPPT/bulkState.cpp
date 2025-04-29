@@ -13,11 +13,6 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         return charger.goOff(currentTime);                             
       }
     )
-    .thenIf([&] { bool shouldGoOn = charger.sol_watts < LOW_SOL_WATTS; return shouldGoOn; },
-      [&] {
-        return charger.goOn();                            
-      }
-    )
     .thenIf([&] { bool shouldProbePVOrRescan = currentTime - lastRescanTime > RESCAN_INTERVAL || charger.pwmController.duty > 818; return shouldProbePVOrRescan;},
       [&] {
         lastRescanTime = currentTime;
@@ -55,7 +50,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
       }                          
     )
     // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
-    .doIf([&]{ bool mpptPoint = charger.mpptReached == 1 || charger.startTracking; return mpptPoint; },
+    .thenIf([&]{ bool mpptPoint = (charger.mpptReached == 1) || charger.startTracking; return mpptPoint; },
       [&]{
         if(currentTime - lastTrackingTime > 29900 || charger.startTracking){
           // do perturbation
@@ -68,7 +63,11 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           lastTrackingTime = currentTime;
           charger.mpptReached = 0; // ! reset MPPT
           charger.startTracking = false;
+        } else if((charger.sol_watts < LOW_SOL_WATTS) && (charger.mpptReached == 1))
+        {
+          return charger.goOn();                            
         }
+        return static_cast<IState*>(this);
       }
     )
     .doIf([&] { bool powerIsRising = sensor.rawPower > rawPowerPrev; return powerIsRising; },
@@ -79,7 +78,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
     )
     .doIf([&] { bool powerIsNotRising = sensor.rawPower <= rawPowerPrev; return powerIsNotRising; },
       [&] {
-        delta = -delta;          
+        delta = -delta;
         charger.pwmController.incrementDuty(delta);
         delta /= 2;
         if(delta == 0){                                                // MPP Reached                                         
