@@ -1,19 +1,29 @@
 #include "SensorsData.h"
 #include "offState.h"
 #include "Charger.h"
+#include "StateFlow.h"
 
 IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) 
 {
-      IState* newState = this;
+      StateFlow<IState*> flow(this);
+      bool canTryToTransit = (currentTime - offTime > OFF_MIN_INTERVAL) && (sensor.PVvoltage > charger.minPVVoltage);
+      int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
 
-      if (currentTime - offTime > OFF_MIN_INTERVAL) { 
-        int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-        if ((sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV) && (sensor.PVvoltage > charger.minPVVoltage)) {
-            newState = charger.goScan(false);
-        } else if (charger.batteryAtFullCapacity || ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV))) {
-            newState = charger.goFloat();                         
-        }
-      }                                                   
+      flow
+        .thenIf(
+          [&] {
+            bool canTransitToScan =  (sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV);
+            return canTryToTransit && canTransitToScan; 
+          }, 
+          [&] { return charger.goScan(false);}
+        )
+        .thenIf(
+          [&] { 
+            bool canTransitTofloat = charger.batteryAtFullCapacity || ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV));
+            return canTryToTransit && canTransitTofloat;
+          },
+          [&] { return charger.goFloat(); }
+        );
 
-      return newState;
+      return flow.get();
     }

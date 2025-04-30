@@ -8,11 +8,6 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
   StateFlow<IState*> flow(this);
 
   flow
-    .thenIf([&] { bool shouldGoOff = sensor.rawCurrentIn <= 0; return shouldGoOff; },         
-      [&] {         
-        return charger.goOff(currentTime);                             
-      }
-    )
     .thenIf([&] { bool shouldProbePVOrRescan = currentTime - lastRescanTime > RESCAN_INTERVAL || charger.pwmController.duty > 818; return shouldProbePVOrRescan;},
       [&] {
         lastRescanTime = currentTime;
@@ -63,9 +58,10 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           lastTrackingTime = currentTime;
           charger.mpptReached = 0; // ! reset MPPT
           charger.startTracking = false;
-        } else if((charger.sol_watts < LOW_SOL_WATTS) && (charger.mpptReached == 1))
-        {
+        } else if((charger.sol_watts < LOW_SOL_WATTS) && (charger.mpptReached == 1)){        
           return charger.goOn();                            
+        } else if (sensor.rawCurrentIn <= 0) {
+           return charger.goOff(currentTime);
         }
         return static_cast<IState*>(this);
       }
