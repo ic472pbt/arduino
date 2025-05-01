@@ -19,7 +19,7 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
         )
         .thenIf(
           [&] { 
-            bool canTransitTofloat = charger.batteryAtFullCapacity || ((sensor.rawBatteryV > floatV) && (sensor.PVvoltage > sensor.batteryV));
+            bool canTransitTofloat = charger.batteryAtFullCapacity || (sensor.rawBatteryV > floatV);
             return canTryToTransit && canTransitTofloat;
           },
           [&] { return charger.goFloat(); }

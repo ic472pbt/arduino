@@ -44,6 +44,11 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         return charger.goFloat();              // battery float voltage go to the charger battery float state            
       }                          
     )
+    .thenIf([&] { bool shouldGoOn = (charger.mpptReached == 1) && (charger.sol_watts < LOW_SOL_WATTS); return shouldGoOn; }, 
+      [&]{
+          return charger.goOn();                            
+      }
+    )
     // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
     .thenIf([&]{ bool mpptPoint = (charger.mpptReached == 1) || charger.startTracking; return mpptPoint; },
       [&]{
@@ -58,10 +63,6 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           lastTrackingTime = currentTime;
           charger.mpptReached = 0; // ! reset MPPT
           charger.startTracking = false;
-        } else if((charger.sol_watts < LOW_SOL_WATTS) && (charger.mpptReached == 1)){        
-          return charger.goOn();                            
-        } else if (sensor.rawCurrentIn <= 0) {
-           return charger.goOff(currentTime);
         }
         return static_cast<IState*>(this);
       }
