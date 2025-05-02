@@ -22,7 +22,7 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
        )
       .thenIf([&] { bool shouldGoOff = sensor.rawCurrentIn <= 0; return shouldGoOff; },
         [&] {
-          charger.minPVVoltage = sensor.PVvoltage; // store latest PV voltage to transit to the onState later
+          charger.minPVVoltage = sensor.PVvoltageFloat; // store latest PV voltage to transit to the onState later
           charger.batteryAtFullCapacity = false;
           return charger.goOff(currentTime);
         }
