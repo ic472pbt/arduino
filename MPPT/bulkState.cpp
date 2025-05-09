@@ -31,8 +31,8 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         bool overVoltage = sensor.rawBatteryV > charger.maxVoltageTempCorrectedRaw(sensor);
         if(sensor.rawBatteryV > batteryVprevRaw || overVoltage){ // voltage is growing - slow this down
           batteryVprevRaw = sensor.rawBatteryV - (overVoltage ? 20 : 0);
-          charger.pwmController.incrementDuty(-(overVoltage ? 10 : 2));
-        }    
+          charger.pwmController.incrementDuty(-(overVoltage ? 10 : 1));
+        }else if(sensor.rawBatteryV < batteryVprevRaw - 30) charger.pwmController.incrementDuty(1);
       }
     )
     .thenIf([&] { 

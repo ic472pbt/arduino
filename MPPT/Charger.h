@@ -41,6 +41,7 @@ public:
         mpptReached        = 1,
         stepsDown          = 0;    // number of scan steps to decrease on overpower event
     bool 
+      isPVoffline = true,          // indicates no sun or PV disconnection  
       finishAbsorbing = false,
       startTracking = true,  
       batteryAtFullCapacity = false;
@@ -85,12 +86,6 @@ public:
             REC=0;
             //pwmController.setMinDuty(); 
             currentState = goFloat();
-            StoreHarvestingData(currentTime);
-            // allow absorbtion
-            absorptionAccTime = 0;       
-            absorptionStartTime = 0;
-            sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
-            finishAbsorbing = false; 
           }
     
           if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
@@ -125,11 +120,21 @@ public:
       return scanInstance.PVupdate;
     }
 
+    void beginNewDay(){      
+      // allow absorbtion
+      absorptionAccTime = 0;       
+      absorptionStartTime = 0;
+      sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
+      finishAbsorbing = false; 
+    }
+
     // transit the charger to the off state
     IState* goOff(unsigned long currentTime){
       mpptReached = 0;
       offInstance.offTime = currentTime;              
       pwmController.shutdown(); 
+      isPVoffline = true;
+      StoreHarvestingData(currentTime);
       return &offInstance;
     }
 
