@@ -12,10 +12,10 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
 
       flow
         // new charging cycle begin
-        .doIf([&] { return canTryToTransit && charger.isPVoffline},
+        .doIf([&] { return canTryToTransit && charger.isPVoffline; },
           [&] {
             charger.isPVoffline = false;
-            charger.beginNewDay();
+            charger.beginNewDay(sensor);
           }
         )
         .thenIf(

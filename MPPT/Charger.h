@@ -120,7 +120,7 @@ public:
       return scanInstance.PVupdate;
     }
 
-    void beginNewDay(){      
+    void beginNewDay(SensorsData& sensor){      
       // allow absorbtion
       absorptionAccTime = 0;       
       absorptionStartTime = 0;
