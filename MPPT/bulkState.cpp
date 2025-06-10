@@ -18,7 +18,6 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
       [&] {
         charger.absorptionStartTime = currentTime + 1;
         batteryVprevRaw = sensor.rawBatteryV;
-        charger.pwmController.storeMpptDuty();
       }
     )
     .doIf([&] {bool isAbsorbing = charger.isAbsorbing(sensor); return isAbsorbing; },
@@ -32,7 +31,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         if(sensor.rawBatteryV > batteryVprevRaw || overVoltage){ // voltage is growing - slow this down
           batteryVprevRaw = sensor.rawBatteryV - (overVoltage ? 20 : 0);
           charger.pwmController.incrementDuty(-(overVoltage ? 10 : 1));
-        }else if(sensor.rawBatteryV < batteryVprevRaw - 30) charger.pwmController.incrementDuty(1);
+        }else if((sensor.rawBatteryV < batteryVprevRaw - 30) && (charger.pwmController.duty < charger.pwmController.mpptDuty)) charger.pwmController.incrementDuty(1);
       }
     )
     .thenIf([&] { 
@@ -40,7 +39,6 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         bool shouldGoFloat = sensor.rawBatteryV > floatV && charger.finishAbsorbing; 
         return shouldGoFloat; },
       [&]{
-        charger.pwmController.storeMpptDuty();
         return charger.goFloat();              // battery float voltage go to the charger battery float state            
       }                          
     )
@@ -81,6 +79,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         if(delta == 0){                                                // MPP Reached                                         
           charger.pwmController.smoothDuty();                          // smooth duty value a bit
           charger.Reverse();                                           // Change the direction for the next tracking.
+          charger.pwmController.storeMpptDuty();
           charger.mpptReached = 1;                                     // indicate MPP reached
         } 
       }

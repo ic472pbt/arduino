@@ -335,6 +335,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" PWM:");        Serial.print(charger.pwmController.duty);
         Serial.print(" cl:");        Serial.print(charger.getMaxFloatCurrent());
         Serial.print(" ABS(h):");    Serial.print(charger.absorptionAccTime/3600000.0);
+        Serial.print(" finish ABS:");    Serial.print(charger.finishAbsorbing);
         Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(charger.tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
         Serial.print(" sDown:");     Serial.print(charger.stepsDown);    

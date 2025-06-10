@@ -74,7 +74,7 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
           charger.pwmController.incrementDuty(2);
         }
 
-        bool drop = sensor.rawBatteryV < floatVoltageLimit - 80;
+        bool drop = sensor.rawBatteryV < floatVoltageLimit - 40;
         bool waiting = isWaitingAfterRecovery && (currentTime - waitingStartTime < MAX_WAITING_AFTER_RECOVERY);
 
         if (drop && !waiting) {
