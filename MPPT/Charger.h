@@ -126,6 +126,7 @@ public:
       absorptionStartTime = 0;
       sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
       finishAbsorbing = false; 
+      isPVoffline = false;
     }
 
     // transit the charger to the off state
