@@ -36,7 +36,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
     )
     .thenIf([&] { 
         int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-        bool shouldGoFloat = sensor.rawBatteryV > floatV && charger.finishAbsorbing; 
+        bool shouldGoFloat = sensor.rawBatteryV > floatV && charger.absorbingDisabled; 
         return shouldGoFloat; },
       [&]{
         return charger.goFloat();              // battery float voltage go to the charger battery float state            

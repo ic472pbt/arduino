@@ -8,6 +8,8 @@
 #define CURRENT_OFFSET 382 
 #define ONE_SECOND 1000ul                   // 1000 ms 
 #define TEN_SECONDS 10000ul                 // 10000 ms 
+#define BAT_24V_THRESHOLD_RAW 1205          // (18.0 / BAT_SENSOR_FACTOR)
+#define TEMP_COEF_PER_CELL   -0.003         // V / °C
 
 #include "SensorsData.h"
 #include "Charger.h"
@@ -45,6 +47,7 @@ class Sensors {
     }
 
   public:
+    uint8_t cellCount;
     int 
       inCurrentOffset = CURRENT_OFFSET,
       outCurrentOffset = 164;  
@@ -79,7 +82,6 @@ class Sensors {
         if (values.rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
           if(charger.stepsDown <= 40) charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
-          charger.setMaxFloatCurrent(values.currentInput * 0.66);
           charger.batteryAtFullCapacity = true;      // if voltage surges, then battery is full
           charger.currentState = charger.goOff(currentTime);
         }
@@ -145,7 +147,7 @@ class Sensors {
     
     void SetTempCompensation(){
       values.temperature = Voltage2Temp(TS);
-      charger.tempCompensationRaw = (int)((25.0 - values.temperature) * TEMP_COMPENSATION_CF / BAT_SENSOR_FACTOR);
+      charger.tempCompensationRaw = (int)((values.temperature - 25.0) * cellCount * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR);
     }
 
     // convert raw int system temperature to float
@@ -165,6 +167,7 @@ class Sensors {
       BTSFilter.reset(BTS);      
       SetTempCompensation();
       values.rawBatteryV = ADS.readADC(BAT_V_SENSOR);
+      cellCount = (values.rawBatteryV > BAT_24V_THRESHOLD_RAW) ? 12 : 6;
       charger.rawSolarV =   ADS.readADC(SOL_V_SENSOR);
       values.batteryV = values.rawBatteryV * BAT_SENSOR_FACTOR;
       values.batteryVsmooth = values.batteryV;  

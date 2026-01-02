@@ -2,7 +2,6 @@
 #define ABSORPTION_START_V_RAW 844 // 564  // switch to absorption mode if bellow
 
 #define SELF_CONSUMPTION 0.045      // static loss (A)
-#define TEMP_COMPENSATION_CF 0.024     // V / 12V / degC / cp = 25deg
 #define THERM_PULLUP_R 12000.0         // CALIB PARAMETER - pullup temp sensor's resistance. PullUp - NTC voltage divider
 #define ROUTINE_INTERVAL 250           //  USER PARAMETER - Time Interval Refresh Rate For Routine Functions (ms)
 
@@ -333,9 +332,8 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" IN curr:");    Serial.print(sensors.values.rawCurrentIn + sensors.inCurrentOffset);    
         Serial.print(" OUT curr:");   Serial.print(sensors.values.rawCurrentOut + sensors.outCurrentOffset);    
         Serial.print(" PWM:");        Serial.print(charger.pwmController.duty);
-        Serial.print(" cl:");        Serial.print(charger.getMaxFloatCurrent());
         Serial.print(" ABS(h):");    Serial.print(charger.absorptionAccTime/3600000.0);
-        Serial.print(" finish ABS:");    Serial.print(charger.finishAbsorbing);
+        Serial.print(" finish ABS:");    Serial.print(charger.absorbingDisabled);
         Serial.print(" minPV:");     Serial.print(charger.minPVVoltage);
         Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(charger.tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction

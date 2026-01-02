@@ -30,11 +30,6 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
         charger.pwmController.slowResume();
       }
     )
-    .doIf([&] { bool shouldIncreaseCurrent = charger.batteryAtFullCapacity && sensor.currentInput < maxCurrent; return shouldIncreaseCurrent; },
-      [&] {        
-        charger.pwmController.incrementDuty(10);
-      }
-    )
     .doIf([&] { bool targetCurrentReached = charger.batteryAtFullCapacity; return targetCurrentReached; },
       [&] {
         charger.pwmController.incrementDuty(-5);
@@ -79,7 +74,6 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
 
         if (drop && !waiting) {
           isWaitingAfterRecovery = false;
-          maxCurrent = CURRENT_ABSOLUTE_MAX;
           charger.stepsDown = max(0, charger.stepsDown - 1);
           return charger.goScan(false);
         }

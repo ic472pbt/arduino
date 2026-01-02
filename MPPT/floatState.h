@@ -19,11 +19,9 @@ private:
   bool
     isWaitingAfterRecovery,
     decrementEvent;
-  int 
+  int
     prevVoltage;
 public: 
-    float 
-      maxCurrent = CURRENT_ABSOLUTE_MAX;  // max allowed current in float mode    
     floatState() : IState("float") {}
     IState* Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) override ;
     bool isFloat() override {return true;}

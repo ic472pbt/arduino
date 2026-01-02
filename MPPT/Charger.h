@@ -12,7 +12,6 @@
 #include "IState.h"
 #include "floatState.h"
 #include "scanState.h"
-#include "scanCurrentState.h"
 #include "bulkState.h"
 #include "onState.h"
 #include "offState.h"
@@ -27,7 +26,6 @@ private:
     offState offInstance;
     onState onInstance;
     scanState scanInstance;
-    scanCurrentState scanCInstance;
     bulkState bulkInstance;
     
     unsigned int 
@@ -42,7 +40,7 @@ public:
         stepsDown          = 0;    // number of scan steps to decrease on overpower event
     bool 
       isPVoffline = true,          // indicates no sun or PV disconnection  
-      finishAbsorbing = false,
+      absorbingDisabled = false,
       startTracking = true,  
       batteryAtFullCapacity = false;
 
@@ -90,7 +88,7 @@ public:
     
           if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
             sensor.floatVoltageRaw = BATT_FLOAT_RAW;  
-            finishAbsorbing = true;
+            absorbingDisabled = true;
           }
 
           IState* newState = currentState->Handle(*this, sensor, currentTime);
@@ -103,17 +101,8 @@ public:
     void Reverse() {dirrection *= -1;}  
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return BATT_FLOAT_RAW + tempCompensationRaw; }
     int maxVoltageTempCorrectedRaw(SensorsData& sensor) { return MAX_BAT_VOLTS_RAW + tempCompensationRaw; }
-    bool isAbsorbing(SensorsData& sensor) { return !finishAbsorbing && sensor.rawBatteryV > floatVoltageTempCorrectedRaw(sensor); }
+    bool isAbsorbing(SensorsData& sensor) { return !absorbingDisabled && sensor.rawBatteryV > floatVoltageTempCorrectedRaw(sensor); }
     bool absorbtionStarted() { return absorptionStartTime > 0; }
-
-    void setMaxFloatCurrent(float currentLimit){
-      floatInstance.maxCurrent = currentLimit;
-    }
-    
-    
-    float getMaxFloatCurrent(){
-      return floatInstance.maxCurrent;
-    }
 
     // check if in pv updating cycle
     bool isUpdatingPV(){
@@ -125,7 +114,7 @@ public:
       absorptionAccTime = 0;       
       absorptionStartTime = 0;
       sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
-      finishAbsorbing = false; 
+      absorbingDisabled = ((millis() / 86400000UL) % 14) != 0; // oce in a two weeks allow abssorbing 
       isPVoffline = false;
     }
 
@@ -149,7 +138,9 @@ public:
     // transit to the float state
     IState* goFloat(){
       mpptReached = 0;
-      if(pwmController.isShuteddown()) pwmController.resume();
+      if(pwmController.isShuteddown()) 
+        pwmController.resume();
+      pwmController.storeMpptDuty();
       return &floatInstance;
     }
 
@@ -165,13 +156,6 @@ public:
       scanInstance.PVupdate = PVupdate;
       dirrection = 1;
       return &scanInstance;
-    }   
-
-    // transit to the current limit scan state
-    IState* goCls(){
-      pwmController.setMinDuty();
-      scanCInstance.currentLimit = floatInstance.maxCurrent;
-      return &scanCInstance;
-    }         
+    }        
 };
 #endif

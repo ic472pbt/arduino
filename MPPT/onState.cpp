@@ -29,7 +29,7 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
       )
       .thenIf([&] { 
           int floatVoltage = charger.floatVoltageTempCorrectedRaw(sensor);    
-          bool shouldGoFloat = charger.finishAbsorbing && (sensor.rawBatteryV > floatVoltage) && (sensor.PVvoltage > sensor.batteryV); 
+          bool shouldGoFloat = charger.absorbingDisabled && (sensor.rawBatteryV > floatVoltage) && (sensor.PVvoltage > sensor.batteryV); 
           return shouldGoFloat; 
         },
         [&] {

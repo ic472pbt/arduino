@@ -6,15 +6,15 @@
 
 #define LOW_BAT_THR 802      // 11.7V
 #define INVERTOR_ON_THR 910  // 13.5V 
-#define INVERTOR_OFF_THR 795 // 11.69V 
+#define INVERTOR_OFF_THR 830 // 12.2V 
 #define CHARGER_ON_THR 850   // 12.4V good
 #define CHARGER_OFF_THR 900  // 13.4V good
 // 20 minutes
 #define ON_INVERTOR_MIN_TIME 4700 // 600000ul //  
-// 120 seconds
-#define SWITCHING_DELAY 469 // 120000 //  
-// 45 minutes
-#define OFF_INVERTOR_MIN_TIME 10500 // 1800000 //  
+// 60 seconds
+#define SWITCHING_DELAY 235 // 60000 //  
+// 23 minutes
+#define OFF_INVERTOR_MIN_TIME 10500 // 900000 //  
 
 
 unsigned int 
@@ -29,13 +29,22 @@ bool
   switchingOffDelay = false;
 
 
-void setup() {
-  analogReference(INTERNAL); // switch to 1.1volt Aref
-  pinMode(INVERTOR_RELAY, OUTPUT);
-  pinMode(INVERTOR_ON, OUTPUT);
-  pinMode(CHARGER_RELAY, OUTPUT);
-  pinMode(VOLTAGE_SENSOR, INPUT);
-  voltage = analogRead(VOLTAGE_SENSOR-1);  // -1 ATtiny chip specifics    
+/* ==== ADC READ ==== */
+static inline uint16_t adc_read(void) {
+  ADCSRA |= (1<<ADSC);
+  while (ADCSRA & (1<<ADSC));
+  return ADC;
+}
+
+/* ==== SETUP ==== */
+void setup(void) {
+  DDRB = _BV(INVERTOR_RELAY) | _BV(CHARGER_RELAY) | _BV(INVERTOR_ON);
+  PORTB = 0;
+
+  ADMUX  = (1<<REFS0) | 1;      // 1.1V ref, ADC1
+  ADCSRA = (1<<ADEN) | 6;       // enable, clk/64
+
+  voltage = adc_read();
 }
 
 // the loop function runs over and over again forever
@@ -57,7 +66,7 @@ void loop() {
 
     if(curTime - lastRun >= 4){ // 1024ms read intervals
       lastRun = curTime;
-      voltage = (voltage * 19u + analogRead(VOLTAGE_SENSOR-1)) / 20u; // averaging by 95/5 ratio
+      voltage = (voltage * 19u + adc_read()) / 20u; // averaging by 95/5 ratio
       lowVoltageCounter += voltage < LOW_BAT_THR ? 1 : -lowVoltageCounter;
         
           if(voltage < CHARGER_ON_THR) PORTB |= _BV(CHARGER_RELAY); // digitalWrite(CHARGER_RELAY, HIGH);      
