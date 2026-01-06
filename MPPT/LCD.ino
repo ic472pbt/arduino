@@ -148,7 +148,7 @@ void PrintOutSolar(float num, valueType kind){
 }
 
 void BatteryPercent(){
-  float ratio = (sensors.values.batteryV - LVD)/(ABSORPTION_START_V - LVD);
+  float ratio = (sensors.values.getBatteryV() - LVD)/(ABSORPTION_START_V - LVD);
   bitWrite(LCDmap[5], 2, ratio > 0.90 ? 1 : 0);
   bitWrite(LCDmap[5], 1, ratio > 0.70 ? 1 : 0);
   bitWrite(LCDmap[4], 1, ratio > 0.50 ? 1 : 0);
@@ -210,7 +210,7 @@ void LCDinfo(unsigned long currentTime){
         if(LCDcycling && !(innerCycle++ % 8)) LCDinfoCycle = (LCDinfoCycle + 1) % 5;        
         switch(LCDinfoCycle){
           case 0:
-            PrintOutRight(sensors.values.batteryV, voltage);
+            PrintOutRight(sensors.values.getBatteryV(), voltage);
             PrintOutSolar(sensors.values.PVvoltage, voltage);
             break;
           case 1:
@@ -219,7 +219,7 @@ void LCDinfo(unsigned long currentTime){
             break;
           case 2:            
             PrintOutRight(sensors.values.currentLoad, amper);
-            PrintOutSolar(sensors.values.currentInput, amper);
+            PrintOutSolar(sensors.values.getCurrentInput(), amper);
             break;
           case 3:
             PrintOutRight(min(charger.pwmController.duty/10.23, 99.9), percent);

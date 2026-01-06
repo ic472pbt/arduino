@@ -26,10 +26,7 @@
 #define BAT_V_SENSOR 0          // ADS yellow
 #define SOL_V_SENSOR 1          // ADS green thiсk
 
-#define BAT_SENSOR_FACTOR 0.01493012 // 0.02235088 19.23 = 1288
 #define CURRENT_OUT_FACTOR 0.02044296 // 0.04114097 // 1A = 48
-#define CURRENT_IN_FACTOR 0.025429352 //<- GAIN2 GAIN1 -> 0.08180441 // 0.03828995 // 2A = 24
-#define CURRENT_IN_LOW_FACTOR 0.009773528
 
 #define SS_RAMP_DELAY 20
 
@@ -44,10 +41,6 @@ IIRFilter BTSIIR(18, 128);
 Charger charger(dutyIIR);
 Sensors sensors(TSIIR, BTSIIR, charger);
 
-// global variables
-
-
-
 // timers
 unsigned long lastInfoTime = 0;
 unsigned long dischargeStartTime;
@@ -58,8 +51,7 @@ unsigned long
   
 // MPPT
 byte 
-  versionNum         = 8,    // Firmware version.
-
+  versionNum         = 9,    // Firmware version.
 
   ERR         = 0;           // SYSTEM PARAMETER - 
            
@@ -82,14 +74,12 @@ OTE                   = 0;           // SYSTEM PARAMETER -
 unsigned long 
   prevRoutineMillis     = 0ul;
 
-              
 bool
   LCDcycling     = true;
 
 int   
   avgStoreTS            = 0,         // SYSTEM PARAMETER - Temperature Sensor uses non invasive averaging, this is used an accumulator for mean averaging
   avgCountTS            = 50;        //  CALIB PARAMETER - Temperature Sensor Average Sampling Count
-
 
 float   
 currentOutAbsolute     = 35.0000,      //  CALIB PARAMETER - Maximum Output Current The System Can Handle (A - Input)
@@ -126,7 +116,7 @@ void setup() {
   ReadHarvestingData();
   charger.initializePWM(pwmPeriod);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   sensors.initialize();
-  
+  charger.minPVVoltage = sensors.values.maxVoltageRaw;
   cli(); // disable global interrupts
 
   TCCR2A = 0; // Set entire TCCR2A register to 0
@@ -163,7 +153,7 @@ void loop() {
 Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
 delay(200);*/ 
  
-  Device_Protection(currentTime, sensors.values.batteryV); 
+  Device_Protection(currentTime, sensors.values.getBatteryV()); 
   charger.Charge(sensors.values, currentTime);
   print_data(sensors.values.PVvoltage, currentTime);
   // float loadV = load_voltage();
@@ -187,14 +177,14 @@ void Read_Sensors(unsigned long currentTime){
 
   if(time_span >= ROUTINE_INTERVAL){   //Run routine every millisRoutineInterval (ms)
     prevRoutineMillis = ct;                     //Store previous time
-    float totalLoadCurrent = sensors.values.currentInput < 0 ? sensors.values.currentLoad - sensors.values.currentInput : sensors.values.currentLoad; // add self consumption
+    float totalLoadCurrent = sensors.values.getCurrentInput() < 0 ? sensors.values.currentLoad - sensors.values.getCurrentInput() : sensors.values.currentLoad; // add self consumption
     
-    todayOutWh += (sensors.values.batteryV * totalLoadCurrent * time_span) / 3.6E+6;
+    todayOutWh += (sensors.values.getBatteryV() * totalLoadCurrent * time_span) / 3.6E+6;
     todayOutAh += totalLoadCurrent * time_span / 3.6E+6;
 
     if(!charger.currentState->isOff()){
       todayWh += (charger.sol_watts * time_span) / 3.6E+6;  //Accumulate and compute energy harvested (3600s*(1000/interval))
-      todayAh += max(sensors.values.currentInput, 0.0) * time_span / 3.6E+6;
+      todayAh += max(sensors.values.getCurrentInput(), 0.0) * time_span / 3.6E+6;
     }
     timeOn += time_span;
     daysRunning = timeOn * 1.1574074e-8; //Compute for days running / (86400s * 1000)                                                        //Increment time counter
@@ -329,13 +319,13 @@ void print_data(float solarVoltage, unsigned long currentTime){
     char L = Serial.read();        
     if(L=='c'){ // calibration data request      
         Serial.print(" mDuty:");      Serial.print(charger.pwmController.mpptDuty);    
-        Serial.print(" IN curr:");    Serial.print(sensors.values.rawCurrentIn + sensors.inCurrentOffset);    
+        Serial.print(" IN curr:");    Serial.print(sensors.values.getRawCurrentIn());    
         Serial.print(" OUT curr:");   Serial.print(sensors.values.rawCurrentOut + sensors.outCurrentOffset);    
         Serial.print(" PWM:");        Serial.print(charger.pwmController.duty);
         Serial.print(" ABS(h):");    Serial.print(charger.absorptionAccTime/3600000.0);
-        Serial.print(" finish ABS:");    Serial.print(charger.absorbingDisabled);
+        Serial.print(" finish ABS:");    Serial.print(charger.isAbsorbingDisabled());
         Serial.print(" minPV:");     Serial.print(charger.minPVVoltage);
-        Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageRaw * BAT_SENSOR_FACTOR);
+        Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageLimitRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(charger.tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
         Serial.print(" sDown:");     Serial.print(charger.stepsDown);    
     }
@@ -391,7 +381,7 @@ void print_data(float solarVoltage, unsigned long currentTime){
       
         Serial.print("Voltage (panel) = "); Serial.println(sensors.values.PVvoltageSmooth);        
         Serial.print("Power (panel) = ");   Serial.println(charger.sol_watts);      
-        Serial.print("Battery Voltage = "); Serial.println(sensors.values.batteryVsmooth);      
+        Serial.print("Battery Voltage = "); Serial.println(sensors.values.getBatteryVsmooth());      
         Serial.print("Battery Current = "); Serial.println(sensors.values.batteryIsmooth);      
         Serial.print("Load Current = ");    Serial.println(sensors.values.currentLoad);    
         Serial.print("Charging = ");        Serial.println(charger.currentState->GetName());

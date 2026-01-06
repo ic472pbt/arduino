@@ -2,10 +2,13 @@
 #include "floatState.h"
 #include "Charger.h"
 #include "StateFlow.h"
+constexpr auto BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL = 140; // 13.8 = 924
 
 IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) {
-  int floatVoltageLimit = charger.floatVoltageTempCorrectedRaw(sensor);
-  int effectiveBound = floatVoltageLimit ;
+    int floatVoltageUpperLimit = charger.voltageTempCompensateRaw(sensor.floatVoltageRaw);
+    // no temperature correction for the lower bound to trigger scan mode transition
+    int floatVoltageLowerLimit = BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL * sensor.getCellCount();
+  int effectiveBound = floatVoltageUpperLimit;
 
   /* Side effects that should run regardless of transition
   bool isAbsorbing = charger.isAbsorbing();
@@ -30,55 +33,32 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
         charger.pwmController.slowResume();
       }
     )
-    .doIf([&] { bool targetCurrentReached = charger.batteryAtFullCapacity; return targetCurrentReached; },
+    .thenIf([&] { bool reverseCurrentDetected = sensor.getRawCurrentIn() <= 0; return reverseCurrentDetected; },
       [&] {
-        charger.pwmController.incrementDuty(-5);
-        isWaitingAfterRecovery = true;
-        waitingStartTime = currentTime;
-         // go to normal voltage stabilization  
-        charger.batteryAtFullCapacity = false;
-      }
-    )
-    .thenIf([&] { bool reverseCurrentDetected = sensor.rawCurrentIn <= 0; return reverseCurrentDetected; },
-      [&] {
-        isWaitingAfterRecovery = false;
         return charger.goOff(currentTime);
       }
     )
     .thenIf([&] { bool lowPowerInputDetected = charger.sol_watts <= LOW_SOL_WATTS; return lowPowerInputDetected; },
       [&] {
-        isWaitingAfterRecovery = false;
         return charger.goOn();
       }
     )
-    .doIf([&] { bool batteryOvervolageDetected = sensor.rawBatteryV > effectiveBound; return batteryOvervolageDetected; },
+    .doIf([&] { bool batteryOvervolageDetected = sensor.getRawBatteryV() > effectiveBound; return batteryOvervolageDetected; },
       [&] {
-        int delta = (sensor.rawBatteryV - effectiveBound) + charger.stepsDown * 4;
+        int delta = (sensor.getRawBatteryV() - effectiveBound) + charger.stepsDown * 4;
         decrementEvent = true;
         charger.pwmController.incrementDuty(-delta);
       }
     )
-    .otherwise(
-      [&] {
-        if (decrementEvent) {
-          decrementEvent = false;
-          prevVoltage = sensor.rawBatteryV;
-        } else if ((prevVoltage - sensor.rawBatteryV > 0) &&
-                   (charger.pwmController.duty < charger.pwmController.mpptDuty)) {
-          prevVoltage = sensor.rawBatteryV;
-          charger.pwmController.incrementDuty(2);
-        }
-
-        bool drop = sensor.rawBatteryV < floatVoltageLimit - 40;
-        bool waiting = isWaitingAfterRecovery && (currentTime - waitingStartTime < MAX_WAITING_AFTER_RECOVERY);
-
-        if (drop && !waiting) {
-          isWaitingAfterRecovery = false;
+    .thenIf([&] { return sensor.getRawBatteryV() < floatVoltageLowerLimit; },
+      [&]{
           charger.stepsDown = max(0, charger.stepsDown - 1);
+          charger.batteryAtFullCapacity = false;
           return charger.goScan(false);
-        }
-
-        return static_cast<IState*>(this);
+      })
+    .doIf([&] { return sensor.getRawBatteryV() < floatVoltageUpperLimit && (charger.pwmController.duty < charger.pwmController.mpptDuty); },
+      [&] {
+          charger.pwmController.incrementDuty(1);
       }
     );
 

@@ -5,10 +5,8 @@
 #define MAX_BOARD_TEMPERATURE 60.0          // USER PARAMETER - Overtemperature, System Shudown When Exceeded (deg C)
 #define MIN_SYSTEM_VOLTAGE    10.0          //  CALIB PARAMETER - 
 #define SOL_V_SENSOR_FACTOR 0.04226373 // 0.06352661 // 19.23 = 455
-#define CURRENT_OFFSET 382 
 #define ONE_SECOND 1000ul                   // 1000 ms 
 #define TEN_SECONDS 10000ul                 // 10000 ms 
-#define BAT_24V_THRESHOLD_RAW 1205          // (18.0 / BAT_SENSOR_FACTOR)
 #define TEMP_COEF_PER_CELL   -0.003         // V / °C
 
 #include "SensorsData.h"
@@ -28,8 +26,7 @@ class Sensors {
     bool
       sensorsUpdated = false;  // full cycle reading completed
     byte
-      currentADCpin  = 0,
-      currentGain    = 2;
+      currentADCpin  = 0;
     unsigned int
       BTS                   = 0u,        // SYSTEM PARAMETER - Raw board temperature sensor ADC value
       TS                    = 0u;        // SYSTEM PARAMETER - Raw temperature sensor ADC value
@@ -47,9 +44,7 @@ class Sensors {
     }
 
   public:
-    uint8_t cellCount;
     int 
-      inCurrentOffset = CURRENT_OFFSET,
       outCurrentOffset = 164;  
 
     SensorsData values;
@@ -71,15 +66,12 @@ class Sensors {
 
       /////////// BATTERY SENSORS /////////////
       if(currentADCpin == BAT_V_SENSOR && ADS.isReady()){
-        values.rawBatteryV = ADS.getValue(); // ADS.readADC(BAT_V_SENSOR); 
+        values.setRawBatteryV(ADS.getValue()); // ADS.readADC(BAT_V_SENSOR); 
         currentADCpin += 1;
-        ADS.requestADC(currentADCpin); // 10ms until read is ready
-        values.batteryV = values.rawBatteryV * BAT_SENSOR_FACTOR;
-        values.batteryVsmooth = IIR2(values.batteryVsmooth, values.batteryV);
-        BNC = values.batteryV < MIN_SYSTEM_VOLTAGE;  //BNC - BATTERY NOT CONNECTED     
-    
+        ADS.requestADC(currentADCpin); // 10ms until read is ready        
+        BNC = values.getBatteryV() < MIN_SYSTEM_VOLTAGE;  //BNC - BATTERY NOT CONNECTED         
         // If we've charged the battery above the MAX voltage 0.4V rising overpower event
-        if (values.rawBatteryV > MAX_BAT_VOLTS_RAW + 27) {
+        if (values.getRawBatteryV() > values.maxVoltageRaw + 27) {
           if(charger.stepsDown <= 40) charger.stepsDown += 4;
           charger.pwmController.incrementDuty(-charger.stepsDown * 4);
           charger.batteryAtFullCapacity = true;      // if voltage surges, then battery is full
@@ -91,7 +83,7 @@ class Sensors {
       if(currentADCpin == SOL_V_SENSOR && ADS.isReady()){
         charger.rawSolarV =  ADS.getValue(); // ADS.readADC(SOL_V_SENSOR);
         currentADCpin += 1;
-        ADS.setGain(currentGain); // read current IN
+        ADS.setGain(values.getCurrentGain()); // read current IN
         ADS.requestADC(currentADCpin);
         values.PVvoltage = charger.rawSolarV * SOL_V_SENSOR_FACTOR;
         // update float PV value any time in PWM off state
@@ -99,34 +91,24 @@ class Sensors {
         // opdate PV voltage not in updating PV voltage state
         if(!charger.isUpdatingPV()) values.PVvoltageSmooth = IIR2(values.PVvoltageSmooth, values.PVvoltage); 
         //IUV - INPUT UNDERVOLTAGE: Input voltage is below max battery charging voltage (for charger mode only)     
-        if(values.PVvoltage + 0.5 < values.batteryV) {IUV=1;REC=1;}else{IUV=0;}   
+        if(values.PVvoltage + 0.5 < values.getBatteryV()) {IUV=1;REC=1;}else{IUV=0;}   
       }
       
       if(currentADCpin == CURRENT_IN_SENSOR && ADS.isReady()){
-        values.rawCurrentIn = ADS.getValue() - inCurrentOffset;
+        values.setRawCurrentIn(ADS.getValue());
         currentADCpin += 1;
         ADS.setGain(1);
-        ADS.requestADC(currentADCpin);
-        if(currentGain == 2){
-          values.currentInput = values.rawCurrentIn * CURRENT_IN_LOW_FACTOR;
-          if(values.rawCurrentIn > 200) {currentGain = 1; inCurrentOffset = CURRENT_OFFSET/2;}
-        }
-        else {
-          values.currentInput = values.rawCurrentIn * CURRENT_IN_FACTOR;         
-          if(values.rawCurrentIn < 78) {currentGain = 2; inCurrentOffset = CURRENT_OFFSET;}
-        }
-        values.batteryIsmooth = IIR2(values.batteryIsmooth, values.currentInput);
-        values.rawPower = (unsigned long)values.rawBatteryV * max(0, values.rawCurrentIn);
+        ADS.requestADC(currentADCpin);                
         sensorsUpdated = true;
         if(currentTime - powerProbeTime >= ONE_SECOND){
-          values.rawPowerPrev = values.rawPower;
+          values.rawPowerPrev = values.getRawPower();
           powerProbeTime = currentTime;
         }
         
-        IOC = values.currentInput  > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
+        IOC = values.getCurrentInput()  > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
 
         // update power value
-        charger.sol_watts = max(values.batteryV * values.currentInput, 0.0);  // ignore negative power supply current
+        charger.sol_watts = max(values.getBatteryV() * values.getCurrentInput(), 0.0);  // ignore negative power supply current
 
         // enable power correction bias to mitigate overproduction issue 
        /* charger.powerCompensation = 
@@ -147,7 +129,7 @@ class Sensors {
     
     void SetTempCompensation(){
       values.temperature = Voltage2Temp(TS);
-      charger.tempCompensationRaw = (int)((values.temperature - 25.0) * cellCount * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR);
+      charger.tempCompensationRaw = (int)((values.temperature - 25.0) * values.getCellCount() * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR);
     }
 
     // convert raw int system temperature to float
@@ -165,15 +147,13 @@ class Sensors {
       BTS = analogRead(RT1);
       TSFilter.reset(TS);
       BTSFilter.reset(BTS);      
-      SetTempCompensation();
-      values.rawBatteryV = ADS.readADC(BAT_V_SENSOR);
-      cellCount = (values.rawBatteryV > BAT_24V_THRESHOLD_RAW) ? 12 : 6;
+      SetTempCompensation();      
+      values.setRawBatteryV(ADS.readADC(BAT_V_SENSOR));
+      values.identifyCellCount();
       charger.rawSolarV =   ADS.readADC(SOL_V_SENSOR);
-      values.batteryV = values.rawBatteryV * BAT_SENSOR_FACTOR;
-      values.batteryVsmooth = values.batteryV;  
       values.PVvoltageSmooth = charger.rawSolarV * SOL_V_SENSOR_FACTOR;
       // ADS.setGain(1); // 4.096V max
-      ADS.requestADC(currentADCpin);
+      ADS.requestADC(currentADCpin);	    
     }
 
     // Detect full cycle of sensors readings

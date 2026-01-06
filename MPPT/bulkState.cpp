@@ -14,29 +14,29 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         return charger.goScan(charger.pwmController.duty <= 818);
       }
     )
-    .doIf([&] {bool absorbtionStarted = charger.isAbsorbing(sensor)  && !charger.absorbtionStarted(); return absorbtionStarted; },
+    .doIf([&] {bool absorbtionStarted = charger.isAbsorbing(sensor) && !charger.absorbtionStarted(); return absorbtionStarted; },
       [&] {
         charger.absorptionStartTime = currentTime + 1;
-        batteryVprevRaw = sensor.rawBatteryV;
+        batteryVprevRaw = sensor.getRawBatteryV();
       }
     )
-    .doIf([&] {bool isAbsorbing = charger.isAbsorbing(sensor); return isAbsorbing; },
+    .doIf([&] {return charger.isAbsorbing(sensor);},
       [&]{
         long interval = currentTime - charger.absorptionStartTime;
         if (interval > 10000) {
           charger.absorptionAccTime += interval;
           charger.absorptionStartTime = currentTime;
         }
-        bool overVoltage = sensor.rawBatteryV > charger.maxVoltageTempCorrectedRaw(sensor);
-        if(sensor.rawBatteryV > batteryVprevRaw || overVoltage){ // voltage is growing - slow this down
-          batteryVprevRaw = sensor.rawBatteryV - (overVoltage ? 20 : 0);
+        bool overVoltage = sensor.getRawBatteryV() > charger.maxVoltageTempCorrectedRaw(sensor);
+        if(sensor.getRawBatteryV() > batteryVprevRaw || overVoltage){ // voltage is growing - slow this down
+          batteryVprevRaw = sensor.getRawBatteryV() - (overVoltage ? 20 : 0);
           charger.pwmController.incrementDuty(-(overVoltage ? 10 : 1));
-        }else if((sensor.rawBatteryV < batteryVprevRaw - 30) && (charger.pwmController.duty < charger.pwmController.mpptDuty)) charger.pwmController.incrementDuty(1);
+        }else if((sensor.getRawBatteryV() < batteryVprevRaw - 30) && (charger.pwmController.duty < charger.pwmController.mpptDuty)) charger.pwmController.incrementDuty(1);
       }
     )
     .thenIf([&] { 
         int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-        bool shouldGoFloat = sensor.rawBatteryV > floatV && charger.absorbingDisabled; 
+        bool shouldGoFloat = sensor.getRawBatteryV() > floatV && charger.isAbsorbingDisabled(); 
         return shouldGoFloat; },
       [&]{
         return charger.goFloat();              // battery float voltage go to the charger battery float state            
@@ -48,11 +48,11 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
       }
     )
     // this is where we do the Peak Power Tracking ro Maximum Power Point algorithm
-    .thenIf([&]{ bool mpptPoint = (charger.mpptReached == 1) || charger.startTracking; return mpptPoint; },
+    .doIf([&]{ bool mpptPoint = (charger.mpptReached == 1) || charger.startTracking; return mpptPoint; },
       [&]{
         if(currentTime - lastTrackingTime > 29900 || charger.startTracking){
           // do perturbation
-          rawPowerPrev = sensor.rawPower;   
+          rawPowerPrev = sensor.getRawPower();   
           voltageInputPrev = charger.rawSolarV;         
           stepSize = MAX_PWM_DELTA;
           delta = charger.dirrection * stepSize;
@@ -62,16 +62,15 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           charger.mpptReached = 0; // ! reset MPPT
           charger.startTracking = false;
         }
-        return static_cast<IState*>(this);
       }
     )
-    .doIf([&] { bool powerIsRising = sensor.rawPower > rawPowerPrev; return powerIsRising; },
+    .doIf([&] { bool powerIsRising = sensor.getRawPower() > rawPowerPrev; return powerIsRising; },
       [&]{
-        rawPowerPrev = sensor.rawPower;
+        rawPowerPrev = sensor.getRawPower();
         charger.pwmController.incrementDuty(delta);
       }
     )
-    .doIf([&] { bool powerIsNotRising = sensor.rawPower <= rawPowerPrev; return powerIsNotRising; },
+    .doIf([&] { bool powerIsNotRising = sensor.getRawPower() <= rawPowerPrev; return powerIsNotRising; },
       [&] {
         delta = -delta;
         charger.pwmController.incrementDuty(delta);

@@ -25,14 +25,27 @@ public:
         return *this;
     }
 
-    template<typename Cond, typename Func>
-    StateFlow& doIf(Cond condition, Func action) {
-        if (!changed && condition()) 
-        {
+    template<typename Func>
+    StateFlow& otherwiseDo(Func action) {
+        if (!changed) {
             action();
             changed = true;
         }
         return *this;
+    }
+
+    template<typename Cond, typename Func>
+    StateFlow& doIf(Cond condition, Func action) {
+        if (!changed && condition()) {
+            action();
+            changed = true;
+        }
+        return *this;
+    }
+
+    template<typename Func>
+    StateFlow& doIfFlag(bool flag, Func action) {
+        return doIf([&] { return flag; }, action);
     }
 
     // Get final value

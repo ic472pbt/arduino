@@ -17,7 +17,6 @@ private:
   unsigned int
     waitingStartTime;
   bool
-    isWaitingAfterRecovery,
     decrementEvent;
   int
     prevVoltage;

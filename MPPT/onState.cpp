@@ -7,20 +7,20 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
  {
     StateFlow<IState*> flow(this);
     flow
-      .doIf([&] { return isRescaningPV; },
+      .doIfFlag(rescanningPvFlag,
         [&] {
           charger.pwmController.resume();
-          isRescaningPV = false;
+          rescanningPvFlag = false;
         }
       )
       .doIf([&] { bool shouldRescan = currentTime - lastRescanTime > RESCAN_INTERVAL; return shouldRescan; },
         [&] {
           lastRescanTime = currentTime;
           charger.pwmController.shutdown();  
-          isRescaningPV = true;
+          rescanningPvFlag = true;
         }
        )
-      .thenIf([&] { bool shouldGoOff = sensor.rawCurrentIn <= 0; return shouldGoOff; },
+      .thenIf([&] { bool shouldGoOff = sensor.getRawCurrentIn() <= 0; return shouldGoOff; },
         [&] {
           charger.minPVVoltage = sensor.PVvoltageFloat; // store latest PV voltage to transit to the onState later
           charger.batteryAtFullCapacity = false;
@@ -29,7 +29,7 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
       )
       .thenIf([&] { 
           int floatVoltage = charger.floatVoltageTempCorrectedRaw(sensor);    
-          bool shouldGoFloat = charger.absorbingDisabled && (sensor.rawBatteryV > floatVoltage) && (sensor.PVvoltage > sensor.batteryV); 
+          bool shouldGoFloat = charger.isAbsorbingDisabled() && (sensor.getRawBatteryV() > floatVoltage) && (sensor.PVvoltage > sensor.getBatteryV()); 
           return shouldGoFloat; 
         },
         [&] {

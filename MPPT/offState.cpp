@@ -1,3 +1,4 @@
+#include "HardwareSerial.h"
 #include "SensorsData.h"
 #include "offState.h"
 #include "Charger.h"
@@ -12,25 +13,30 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
 
       flow
         // new charging cycle begin
-        .doIf([&] { return canTryToTransit && charger.isPVoffline; },
+        .doIfFlag(canTryToTransit && charger.isPVoffline && !charger.batteryAtFullCapacity,
           [&] {
-
+            //Serial.println("begin new day");
             charger.beginNewDay(sensor);
           }
         )
         .thenIf(
           [&] {
-            bool canTransitToScan =  !charger.isPVoffline && (sensor.batteryV > LVD) && (sensor.rawBatteryV < floatV);
+            bool canTransitToScan =  !charger.isPVoffline && (sensor.getBatteryV() > LVD) && (sensor.getRawBatteryV() < floatV);
             return canTryToTransit && canTransitToScan; 
           }, 
-          [&] { return charger.goScan(false);}
+          [&] { 
+            //Serial.println("transit to scan");
+            return charger.goScan(false);
+          }
         )
         .thenIf(
           [&] { 
-            bool canTransitTofloat = charger.absorbingDisabled && (charger.batteryAtFullCapacity || (sensor.rawBatteryV > floatV));
+            bool canTransitTofloat = charger.isAbsorbingDisabled() && (charger.batteryAtFullCapacity || (sensor.getRawBatteryV() > floatV));
             return canTryToTransit && canTransitTofloat;
           },
-          [&] { return charger.goFloat(); }
+          [&] { 
+            //Serial.println("transit to float");
+            return charger.goFloat(); }
         );
 
       return flow.get();

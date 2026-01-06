@@ -4,8 +4,6 @@
 
 #define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
 #define RESCAN_INTERVAL 299500U //  PV sensing every 5 min. Switch off PWM controler for this.
-#define BATT_FLOAT 13.80            // battery voltage we want to stop charging at
-#define BATT_FLOAT_RAW 924 // 617          // raw battery voltage we want to stop charging at
 
 #include "SensorsData.h"
 #include "PWM.h"
@@ -31,6 +29,9 @@ private:
     unsigned int 
       sensorDelay = 200, 
       period;
+    bool
+        absorbingDisabled = true;
+
 public:
     int
       rawSolarV             = 0,           // SYSTEM PARAMETER - 
@@ -40,7 +41,6 @@ public:
         stepsDown          = 0;    // number of scan steps to decrease on overpower event
     bool 
       isPVoffline = true,          // indicates no sun or PV disconnection  
-      absorbingDisabled = false,
       startTracking = true,  
       batteryAtFullCapacity = false;
 
@@ -50,7 +50,7 @@ public:
       absorptionAccTime     = 0;           //SYSTEM PARAMETER - total time of absorption
     float 
       // min PV voltage to start charging
-      minPVVoltage          = BATT_FLOAT,  
+      minPVVoltage,  
       // Input solar power in Watts
       sol_watts;                     
     char dirrection = 1;  // Public property for accessing flip
@@ -73,7 +73,7 @@ public:
     }
 
     void Charge(SensorsData& sensor, unsigned long currentTime){
-        sensorDelay = (currentState->isFloat() && !batteryAtFullCapacity) ? 5000 : 200;
+        sensorDelay = currentState->isFloat() ? 250 : 500;
         if(currentTime - lastSensorsUpdateTime > sensorDelay){ // sensors inertia delay
           lastSensorsUpdateTime = currentTime;
 
@@ -86,9 +86,8 @@ public:
             currentState = goFloat();
           }
     
-          if(absorptionAccTime >= ABSORPTION_TIME_LIMIT) {
-            sensor.floatVoltageRaw = BATT_FLOAT_RAW;  
-            absorbingDisabled = true;
+          if(absorptionAccTime >= ABSORPTION_TIME_LIMIT && !absorbingDisabled) {
+			      setAbsorbingDisabled(true, sensor);
           }
 
           IState* newState = currentState->Handle(*this, sensor, currentTime);
@@ -99,22 +98,31 @@ public:
     }
 
     void Reverse() {dirrection *= -1;}  
-    int floatVoltageTempCorrectedRaw(SensorsData& sensor) { return BATT_FLOAT_RAW + tempCompensationRaw; }
-    int maxVoltageTempCorrectedRaw(SensorsData& sensor) { return MAX_BAT_VOLTS_RAW + tempCompensationRaw; }
-    bool isAbsorbing(SensorsData& sensor) { return !absorbingDisabled && sensor.rawBatteryV > floatVoltageTempCorrectedRaw(sensor); }
-    bool absorbtionStarted() { return absorptionStartTime > 0; }
+    int floatVoltageTempCorrectedRaw(SensorsData& sensor) const { return BATT_FLOAT_RAW_PER_CELL * sensor.getCellCount() + tempCompensationRaw; }
+    int voltageTempCompensateRaw(int rawVoltagePerBattery) const { return rawVoltagePerBattery + tempCompensationRaw; }
+    int maxVoltageTempCorrectedRaw(SensorsData& sensor) const { return sensor.maxVoltageRaw + tempCompensationRaw; }
+    bool isAbsorbing(SensorsData& sensor) const { return !absorbingDisabled && sensor.getRawBatteryV() > floatVoltageTempCorrectedRaw(sensor); }
+    bool absorbtionStarted() const { return absorptionStartTime > 0; }
 
     // check if in pv updating cycle
-    bool isUpdatingPV(){
+    bool isUpdatingPV() const {
       return scanInstance.PVupdate;
     }
+
+    void setAbsorbingDisabled(bool disabled, SensorsData& sensor){
+      absorbingDisabled = disabled;
+      sensor.floatVoltageLimitRaw = disabled ? sensor.floatVoltageLimitRaw : sensor.maxVoltageRaw;
+	}
+
+    bool isAbsorbingDisabled() const {
+      return absorbingDisabled;
+	}
 
     void beginNewDay(SensorsData& sensor){      
       // allow absorbtion
       absorptionAccTime = 0;       
       absorptionStartTime = 0;
-      sensor.floatVoltageRaw = MAX_BAT_VOLTS_RAW; 
-      absorbingDisabled = ((millis() / 86400000UL) % 14) != 0; // oce in a two weeks allow abssorbing 
+      setAbsorbingDisabled(((millis() / 86400000UL) % 14) != 7, sensor); // once in a two weeks allow absorbing 
       isPVoffline = false;
     }
 
@@ -140,7 +148,6 @@ public:
       mpptReached = 0;
       if(pwmController.isShuteddown()) 
         pwmController.resume();
-      pwmController.storeMpptDuty();
       return &floatInstance;
     }
 
