@@ -9,7 +9,7 @@ IState* onState::Handle(Charger& charger, SensorsData& sensor, unsigned long cur
     flow
       .doIfFlag(rescanningPvFlag,
         [&] {
-          charger.pwmController.resume();
+          charger.pwmController.setDuty(MAX_DUTY);
           rescanningPvFlag = false;
         }
       )
