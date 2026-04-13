@@ -98,7 +98,7 @@ public:
     }
 
     void Reverse() {dirrection *= -1;}  
-    int floatVoltageTempCorrectedRaw(SensorsData& sensor) const { return BATT_FLOAT_RAW_PER_CELL * sensor.getCellCount() + tempCompensationRaw; }
+    int floatVoltageTempCorrectedRaw(SensorsData& sensor) const { return sensor.floatVoltageLimitRaw + tempCompensationRaw; }
     int voltageTempCompensateRaw(int rawVoltagePerBattery) const { return rawVoltagePerBattery + tempCompensationRaw; }
     int maxVoltageTempCorrectedRaw(SensorsData& sensor) const { return sensor.maxVoltageRaw + tempCompensationRaw; }
     bool isAbsorbing(SensorsData& sensor) const { return !absorbingDisabled && sensor.getRawBatteryV() > floatVoltageTempCorrectedRaw(sensor); }

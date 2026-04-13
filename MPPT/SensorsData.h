@@ -1,6 +1,7 @@
 #ifndef SENSORSDATA_H
 #include <Arduino.h>
 #define SENSORSDATA_H
+constexpr float FULL_BATT_VOLTS_RAW_PER_CELL = 141;   // raw value of fully charged battery voltage 12.6 
 constexpr auto MAX_BATT_VOLTS_RAW_PER_CELL = 160; // 642       // raw value of battery voltage 14.35  ;
 constexpr auto BATT_FLOAT_RAW_PER_CELL = 151; // 13.8 = 924 // 617  raw battery voltage we want to stop charging at;
 #define BAT_SENSOR_FACTOR 0.01493012 // 0.02235088 19.23 = 1288
@@ -22,7 +23,8 @@ public:
     float temperature    = 0.0;
     float currentLoad    = 0.0;
 
-    float batteryIsmooth = 0.0;
+    float fullyChargedVoltage,
+      batteryIsmooth = 0.0;
 
     float PVvoltage      = 0.0;
     float PVvoltageSmooth= 0.0;
@@ -36,6 +38,7 @@ public:
       floatVoltageRaw = BATT_FLOAT_RAW_PER_CELL * cellCount;
       maxVoltageRaw = MAX_BATT_VOLTS_RAW_PER_CELL * cellCount;
       floatVoltageLimitRaw = floatVoltageRaw;
+      fullyChargedVoltage = FULL_BATT_VOLTS_RAW_PER_CELL * cellCount * BAT_SENSOR_FACTOR;
     }
 
     uint8_t getCellCount() const {

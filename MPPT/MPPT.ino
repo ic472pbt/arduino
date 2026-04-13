@@ -1,6 +1,3 @@
-#define ABSORPTION_START_V 12.6     // switch to absorption mode if bellow
-#define ABSORPTION_START_V_RAW 844 // 564  // switch to absorption mode if bellow
-
 #define SELF_CONSUMPTION 0.045      // static loss (A)
 #define THERM_PULLUP_R 12000.0         // CALIB PARAMETER - pullup temp sensor's resistance. PullUp - NTC voltage divider
 #define ROUTINE_INTERVAL 250           //  USER PARAMETER - Time Interval Refresh Rate For Routine Functions (ms)
