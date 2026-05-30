@@ -326,9 +326,6 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageLimitRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(charger.tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
         Serial.print(" sDown:");     Serial.print(charger.stepsDown);    
-        Serial.print(" SampleRate = "); Serial.print(sensors.values.getSampleRate());
-        Serial.print("Hz Interval = "); Serial.print(sensors.values.getAvgSampleInterval());
-        Serial.print("ms");
     }
     else if(L=='e'){ // errors request
         Serial.print(" ERR:");   Serial.print(ERR);

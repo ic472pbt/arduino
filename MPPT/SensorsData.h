@@ -22,7 +22,6 @@ public:
         rawCurrentOut = 0;
 
     unsigned long rawPowerPrev = 0;
-    unsigned long lastBatteryUpdateTime = 0;
     unsigned long batteryUpdateCount = 0;
 
     float temperature    = 0.0;
@@ -56,39 +55,26 @@ public:
     }
 
     void setRawBatteryV(int raw) {
-        unsigned long currentTime = millis();
-        unsigned long timeSinceLastUpdate = currentTime - lastBatteryUpdateTime;
-        
+        // Sampling rate fixed at 25 Hz (40 ms). Use fixed IIR coefficients tuned for that rate.
+        const float FAST_ALPHA = 0.15f; // stage1: remove PWM/ADC ripple (~3 Hz cutoff)
+        const float SLOW_ALPHA = 0.08f; // stage2: smooth for display/control (~500 ms time constant)
+
         rawBatteryV = raw;
         batteryV = raw * BAT_SENSOR_FACTOR;
-        lastBatteryUpdateTime = currentTime;
         batteryUpdateCount++;
-        
-        // Update running average of sample interval
-        if(batteryUpdateCount > 1) {
-            avgSampleInterval = avgSampleInterval * 0.95f + timeSinceLastUpdate * 0.05f;
-        } else {
-            avgSampleInterval = 40.0f; // Initialize with expected 40ms
-        }
-        
+
+
         // Two-stage filtering:
-        // Stage 1: Fast local filtering for ADC noise and PWM ripple (40ms sampling)
-        // Stage 2: Additional smoothing for display/remote (applied separately)
-        
-        if(batteryVsmooth == 0.0) {
+        if(batteryVsmooth == 0.0f) {
             // Initialize both filters on first sample
             batteryVsmooth = batteryV;
             rawBatteryVfast = batteryV;
         } else {
             // Stage 1: Fast filter for local high-frequency noise
-            // α = 0.15 gives ~3Hz cutoff at 25Hz sampling (appropriate for PWM ripple removal)
-            rawBatteryVfast = IIRFast(rawBatteryVfast, batteryV, 0.15);
-            
-            // Stage 2: Adaptive slow filter based on actual update interval
-            // For ~40ms local updates: use slower smoothing
-            // This provides the smooth value for both local decisions and remote display
-            float alpha = calculateAdaptiveAlpha(timeSinceLastUpdate);
-            batteryVsmooth = IIRFast(batteryVsmooth, rawBatteryVfast, alpha);
+            rawBatteryVfast = IIRFast(rawBatteryVfast, batteryV, FAST_ALPHA);
+
+            // Stage 2: Fixed slow filter for stable display/control
+            batteryVsmooth = IIRFast(batteryVsmooth, rawBatteryVfast, SLOW_ALPHA);
         }
     }
 
@@ -118,7 +104,7 @@ public:
 
     // Get instantaneous sample rate in Hz
     float getSampleRate() const {
-        return (avgSampleInterval > 0.0f) ? (1000.0f / avgSampleInterval) : 0.0f;
+        return 25.0;
     }
 
     void setRawCurrentIn(int raw) {
@@ -167,37 +153,14 @@ private:
 
     unsigned long rawPower = 0;
     
-    // Calculate adaptive alpha based on actual sampling interval
-    // This ensures consistent filtering regardless of sampling rate variations
-    float calculateAdaptiveAlpha(unsigned long deltaTime_ms) {
-        // Target time constant: 500ms for smooth display without lag
-        // α = 1 - exp(-Ts/τ) where Ts = sampling interval, τ = time constant
-        const float timeConstant = 500.0; // ms
-        float dt = (float)deltaTime_ms;
-        
-        // Clamp to reasonable range
-        if(dt < 10.0) dt = 40.0;   // Assume normal 40ms if too fast
-        if(dt > 5000.0) dt = 5000.0; // Cap at 5 seconds
-        
-        // Calculate alpha: for small dt/tau, α ≈ dt/tau
-        float alpha = 1.0 - expf(-dt / timeConstant);
-        
-        // Clamp to safe range
-        if(alpha < 0.02) alpha = 0.02;  // Minimum smoothing
-        if(alpha > 0.5) alpha = 0.5;    // Maximum responsiveness
-        
-        return alpha;
-    }
-    
     // Stage 1: Fast IIR filter for high-frequency noise (ADC, PWM ripple)
-    // Called at local sampling rate (~25Hz, 40ms interval)
-    // α = 0.15 gives cutoff ≈ 3Hz, removes >10Hz noise while preserving real variations
+    // Called at local sampling rate (25Hz). Coefficients are fixed for that rate.
     float IIRFast(float oldValue, float newValue, float alpha){
-      return oldValue * (1.0 - alpha) + newValue * alpha;
+      return oldValue * (1.0f - alpha) + newValue * alpha;
     }
     
     // High-frequency IIR filter for current measurements (sampled at ~25Hz)
-    // α = 0.008 is too aggressive; increased to 0.05 for better tracking
+
     float IIR2(float oldValue, float newValue){
       return oldValue * 0.95 + newValue * 0.05;
     }
