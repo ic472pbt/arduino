@@ -143,18 +143,19 @@ void loop() {
   static char ssDelta = 1;
   
   unsigned long currentTime=millis();  
-  sensors.Read(currentTime);
-  Read_Sensors(currentTime);
- // Serial.print(pwmPeriod); Serial.println(" "); // Serial.print(ADS.readADC(CURRENT_IN_SENSOR));
-/*Serial.print("load: "); 
-Serial.print( rawCurrentIn);  Serial.print(" ");Serial.println(currentInput);
-delay(200);*/ 
- 
-  Device_Protection(currentTime, sensors.values.getBatteryV()); 
-  charger.Charge(sensors.values, currentTime);
-  print_data(sensors.values.PVvoltage, currentTime);
-  // float loadV = load_voltage();
   
+  // Read sensors (non-blocking, state-machine driven)
+  sensors.Read(currentTime);
+  
+  // Only proceed with control logic when we have a complete sensor update
+  if(sensors.SensorsRoundCompleted()) {
+    Read_Sensors(currentTime);
+    Device_Protection(currentTime, sensors.values.getBatteryV()); 
+    charger.Charge(sensors.values, currentTime);
+  }
+  
+  // These can run every loop (they're not time-critical for control)
+  print_data(sensors.values.PVvoltage, currentTime);
   monitor_button();
   LCDinfo(currentTime);
 }
@@ -325,6 +326,9 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" Float V:");   Serial.print(sensors.values.floatVoltageLimitRaw * BAT_SENSOR_FACTOR);
         Serial.print(" TCor V:");    Serial.print(charger.tempCompensationRaw * BAT_SENSOR_FACTOR); // temperature correction
         Serial.print(" sDown:");     Serial.print(charger.stepsDown);    
+        Serial.print(" SampleRate = "); Serial.print(sensors.values.getSampleRate());
+        Serial.print("Hz Interval = "); Serial.print(sensors.values.getAvgSampleInterval());
+        Serial.print("ms");
     }
     else if(L=='e'){ // errors request
         Serial.print(" ERR:");   Serial.print(ERR);
@@ -390,9 +394,6 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print("OUT Temp = ");    Serial.println(sensors.values.temperature);
         Serial.print("SYS Temp = ");    Serial.println(sensors.boardTemperature());
         Serial.print("PVF = ");         Serial.print(sensors.values.PVvoltageFloat);
-        Serial.print(" SampleRate = "); Serial.print(sensors.values.getSampleRate());
-        Serial.print("Hz Interval = "); Serial.print(sensors.values.getAvgSampleInterval());
-        Serial.print("ms");
     }
     else if(L=='s'){
       StoreHarvestingData(currentTime);
