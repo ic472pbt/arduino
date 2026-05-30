@@ -7,10 +7,10 @@ constexpr auto BATT_FLOAT_RAW_PER_CELL = 155; // 13.9 = 930  raw battery voltage
 constexpr auto LVR_PER_CELL = 2.1;
 constexpr auto HVD_PER_CELL = 2.63;
 constexpr auto LVD_PER_CELL = 1.8;
-constexpr auto BAT_SENSOR_FACTOR = 0.01493012 // 0.02235088 19.23 = 1288;
+constexpr auto BAT_SENSOR_FACTOR = 0.01493012; // 0.02235088 19.23 = 1288;
 constexpr auto CURRENT_OFFSET = 382 ;
 constexpr auto CURRENT_IN_LOW_FACTOR = 0.009773528;
-constexpr auto CURRENT_IN_FACTOR = 0.025429352 //<- GAIN2 GAIN1 -> 0.08180441 // 0.03828995 // 2A = 24;
+constexpr auto CURRENT_IN_FACTOR = 0.025429352; //<- GAIN2 GAIN1 -> 0.08180441 // 0.03828995 // 2A = 24;
 constexpr auto BAT_24V_THRESHOLD_RAW = 1205;          // (18.0 / BAT_SENSOR_FACTOR)
 
 class SensorsData {
