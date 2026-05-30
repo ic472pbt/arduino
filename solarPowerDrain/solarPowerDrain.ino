@@ -4,19 +4,18 @@
 #define VOLTAGE_SENSOR PB2 
 #define INVERTOR_ON PB3 
 
-#define LOW_BAT_THR 802      // 11.7V
-#define INVERTOR_ON_THR 910  // 13.5V 
-#define INVERTOR_OFF_THR 830 // 12.2V 
-#define CHARGER_ON_THR 850   // 12.4V good
-#define CHARGER_OFF_THR 875  // 13.0V good
-// 20 minutes
-#define ON_INVERTOR_MIN_TIME 4700 
-// 60 seconds
-#define SWITCHING_DELAY 235 // 60000 //  
-// 15 minutes
-#define OFF_INVERTOR_MIN_TIME 3500 // 900000 //  
+#define LOW_BAT_THR 837      // 11.7V 23.4V
+#define INVERTOR_ON_THR 966  // 13.5V 27V good
+#define INVERTOR_OFF_THR 907 // 12.5V 25.0V good
+#define CHARGER_ON_THR 887   // 12.4V  24.8V
+#define CHARGER_OFF_THR 930  // 13.0V  26V
 
+// Timing constants
+#define ON_INVERTOR_MIN_TIME 4700      // 20 minutes
+#define OFF_INVERTOR_MIN_TIME 3500     // 15 minutes
+#define SWITCHING_DELAY 235            // 60 seconds
 
+// State variables
 unsigned int 
   voltage  = 0,
   lastRun  = 0,

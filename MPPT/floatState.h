@@ -15,11 +15,10 @@ class Charger;  // Forward declaration of Charger
 class floatState : public IState {
 private:
   unsigned int
-    waitingStartTime;
+    rawPowerPrev;
   bool
+    isTestingDuty,
     decrementEvent;
-  int
-    prevVoltage;
 public: 
     floatState() : IState("float") {}
     IState* Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) override ;

@@ -1,6 +1,5 @@
 #ifndef OFFSTATE_H
 #define OFFSTATE_H
-#define LVD 10.8
 #define OFF_MIN_INTERVAL 15000U // 0.25 min
 
 #include "IState.h"

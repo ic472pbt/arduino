@@ -1,3 +1,4 @@
+#include "HardwareSerial.h"
 #include "scanState.h"
 #include "Charger.h"
 #include "StateFlow.h"
@@ -25,9 +26,10 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           charger.pwmController.incrementDuty(-10);   
           return charger.goFloat();
       })
-    .thenIf([&] { return cycleNum > 18; },
+    .thenIf([&]  { return cycleNum > 0; },// { return cycleNum > 18; },
       [&]{
           cycleNum = 0;
+          bestDuty = (unsigned int)(1461.0 * sensor.getBatteryV() / sensor.PVvoltageFloat);
           charger.pwmController.setDuty(bestDuty);
           charger.pwmController.initIIR();
           charger.startTracking = true;

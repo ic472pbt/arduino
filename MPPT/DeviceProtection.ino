@@ -1,6 +1,3 @@
-
-#define LVR 12.6
-#define HVD 15.8
 #define LOAD_DISCONNECT_LIMIT 60000  // USER PARAMETER - Time interval for load disconnection on error
 
 bool 
@@ -32,8 +29,8 @@ void Device_Protection(unsigned long currentTime, float voltageOutput){
   //FAULT DETECTION     
   ERR = OTE || IOC || IUV || BNC;                                                                                          //Reset local error counter
     
-  if(sensors.values.getBatteryV() > HVD)                                      {OOV=1;ERR++;hvd_event=true;}else{OOV=0;}  //OOV - OUTPUT OVERVOLTAGE: Output voltage has reached absolute limit                     
-  if(sensors.values.getBatteryV() < LVD){
+  if(sensors.values.getBatteryV() > sensors.values.HVD)                                      {OOV=1;ERR++;hvd_event=true;}else{OOV=0;}  //OOV - OUTPUT OVERVOLTAGE: Output voltage has reached absolute limit                     
+  if(sensors.values.getBatteryV() < sensors.values.LVD){
     if(!prev_lvd_event){
       prev_lvd_event=true;
       lvdLastTime = currentTime;
@@ -50,8 +47,8 @@ void Device_Protection(unsigned long currentTime, float voltageOutput){
     lastLoadDisconnect = currentTime;
     StoreHarvestingData(currentTime);
   }else if(currentTime - lastLoadDisconnect > LOAD_DISCONNECT_LIMIT){
-    lvd_event &= (sensors.values.getBatteryV() <= LVR);
-    hvd_event &= (sensors.values.getBatteryV() >= HVD);
+    lvd_event &= (sensors.values.getBatteryV() <= sensors.values.LVR);
+    hvd_event &= (sensors.values.getBatteryV() >= sensors.values.HVD);
 
     load_on(!(lvd_event || hvd_event)); // also OOC recovery
   }   

@@ -148,7 +148,7 @@ void PrintOutSolar(float num, valueType kind){
 }
 
 void BatteryPercent(){
-  float ratio = (sensors.values.getBatteryV() - LVD)/(sensors.values.fullyChargedVoltage - LVD);
+  float ratio = (sensors.values.getBatteryV() - sensors.values.LVD)/(sensors.values.fullyChargedVoltage - sensors.values.LVD);
   bitWrite(LCDmap[5], 2, ratio > 0.90 ? 1 : 0);
   bitWrite(LCDmap[5], 1, ratio > 0.70 ? 1 : 0);
   bitWrite(LCDmap[4], 1, ratio > 0.50 ? 1 : 0);

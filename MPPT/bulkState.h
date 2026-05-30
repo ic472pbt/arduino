@@ -1,6 +1,6 @@
 #ifndef BULKSTATE_H
 #define BULKSTATE_H
-#define MAX_PWM_DELTA 4
+#define MAX_PWM_DELTA 16
 
 #include "IState.h"
 class Charger;  // Forward declaration of Charger
@@ -13,8 +13,6 @@ class bulkState : public IState {
     unsigned long 
       lastTrackingTime,
       rawPowerPrev   = 0;
-    byte 
-      stepSize = MAX_PWM_DELTA;
     int 
       delta = 10,      
       batteryVprevRaw  = 0,

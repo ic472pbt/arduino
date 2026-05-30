@@ -8,10 +8,10 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
   StateFlow<IState*> flow(this);
 
   flow
-    .thenIf([&] { bool shouldProbePVOrRescan = currentTime - lastRescanTime > RESCAN_INTERVAL || charger.pwmController.duty > 818; return shouldProbePVOrRescan;},
+    .thenIf([&] { bool shouldProbePVOrRescan = currentTime - lastRescanTime > RESCAN_INTERVAL || charger.pwmController.duty > 988; return shouldProbePVOrRescan;},
       [&] {
         lastRescanTime = currentTime;
-        return charger.goScan(charger.pwmController.duty <= 818);
+        return charger.goScan(charger.pwmController.duty <= 988);
       }
     )
     .doIf([&] {bool absorbtionStarted = charger.isAbsorbing(sensor) && !charger.absorbtionStarted(); return absorbtionStarted; },
@@ -53,9 +53,8 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         if(currentTime - lastTrackingTime > 29900 || charger.startTracking){
           // do perturbation
           rawPowerPrev = sensor.getRawPower();   
-          voltageInputPrev = charger.rawSolarV;         
-          stepSize = MAX_PWM_DELTA;
-          delta = charger.dirrection * stepSize;
+          voltageInputPrev = charger.rawSolarV;
+          delta = charger.dirrection * (sensor.getCellCount() > 9 ? MAX_PWM_DELTA : MAX_PWM_DELTA / 4);
           charger.pwmController.initIIR();
           charger.pwmController.incrementDuty(delta);
           lastTrackingTime = currentTime;

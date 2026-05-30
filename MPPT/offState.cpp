@@ -21,7 +21,7 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
         )
         .thenIf(
           [&] {
-            bool canTransitToScan =  !charger.isPVoffline && (sensor.getBatteryV() > LVD) && (sensor.getRawBatteryV() < floatV);
+            bool canTransitToScan =  !charger.isPVoffline && (sensor.getBatteryV() > sensor.LVD) && (sensor.getRawBatteryV() < floatV);
             return canTryToTransit && canTransitToScan; 
           }, 
           [&] { 
