@@ -7,11 +7,12 @@
 #define LOW_BAT_THR 837      // 11.7V 23.4V
 #define INVERTOR_ON_THR 966  // 13.5V 27V good
 #define INVERTOR_OFF_THR 907 // 12.5V 25.0V good
+#define INVERTOR_OFF_DELTA 8 // 0.1V  0.2V 
 #define CHARGER_ON_THR 887   // 12.4V  24.8V
 #define CHARGER_OFF_THR 930  // 13.0V  26V
 
 // Timing constants
-#define ON_INVERTOR_MIN_TIME 4700      // 20 minutes
+#define BUFFER_MIN_TIME 4700      // 20 minutes
 #define OFF_INVERTOR_MIN_TIME 3500     // 15 minutes
 #define SWITCHING_DELAY 235            // 60 seconds
 
@@ -20,11 +21,13 @@ unsigned int
   voltage  = 0,
   lastRun  = 0,
   onInvertorStart  = 0,
+  bufferModeStart  = 0,
   offInvertorStart = 0,
   delayingStart = 0;
 bool 
   invertorStarted = false,
   switchingDelay  = false,
+  bufferMode = false,
   switchingOffDelay = false;
 
 
@@ -49,7 +52,6 @@ void setup(void) {
 // the loop function runs over and over again forever
 void loop() {  
     static byte lowVoltageCounter = 0;  
-    static byte dischargeVoltageCounter = 0;  
     unsigned long currentTime = millis();
     // unsigned int curTime = (unsigned int)(currentTime >> 8 & 0xFF); // 256ms resolution at 65536 ~ 4.66 h
     byte *p = (byte *)&currentTime; // pointer to the bytes of the value
@@ -68,14 +70,22 @@ void loop() {
       lastRun = curTime;
       voltage = (voltage * 19u + adc_read()) / 20u; // averaging by 95/5 ratio
       lowVoltageCounter += voltage < LOW_BAT_THR ? 1 : -lowVoltageCounter;
-      dischargeVoltageCounter += voltage < INVERTOR_OFF_THR ? 1 : -dischargeVoltageCounter;
+      
+      if(bufferMode){
+        bufferMode = voltage < (INVERTOR_OFF_THR + INVERTOR_OFF_DELTA);
+      }
+      else{
+        bufferMode = voltage < INVERTOR_OFF_THR;
+        bufferModeStart = curTime;
+      }
         
           if(voltage < CHARGER_ON_THR) PORTB |= _BV(CHARGER_RELAY); // digitalWrite(CHARGER_RELAY, HIGH);      
       else 
           if(voltage > CHARGER_OFF_THR) PORTB &= ~_BV(CHARGER_RELAY);
       
       if(invertorStarted){
-        if(switchingOffDelay || lowVoltageCounter > 5 || ((voltage < INVERTOR_OFF_THR) && (dischargeVoltageCounter > 30) && (curTime - onInvertorStart >= ON_INVERTOR_MIN_TIME))){        
+        if(switchingOffDelay || lowVoltageCounter > 5 || (bufferMode && (curTime - bufferModeStart >= BUFFER_MIN_TIME))){        
+          bufferMode = false;
           switchingDelay = false;
           PORTB &= ~_BV(INVERTOR_ON);         // digitalWrite(INVERTOR_ON, LOW);
           if(!switchingOffDelay) {
