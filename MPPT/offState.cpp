@@ -36,7 +36,7 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
           },
           [&] { 
             //Serial.println("transit to float");
-            return charger.goFloat(); }
+            return charger.goFloat(sensor.getRawBatteryV()); }
         );
 
       return flow.get();

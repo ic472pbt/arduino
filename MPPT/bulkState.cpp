@@ -39,7 +39,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         bool shouldGoFloat = sensor.getRawBatteryV() > floatV && charger.isAbsorbingDisabled(); 
         return shouldGoFloat; },
       [&]{
-        return charger.goFloat();              // battery float voltage go to the charger battery float state            
+        return charger.goFloat(sensor.getRawBatteryV());              // battery float voltage go to the charger battery float state            
       }                          
     )
     .thenIf([&] { bool shouldGoOn = (charger.mpptReached == 1) && (charger.sol_watts < LOW_SOL_WATTS); return shouldGoOn; }, 

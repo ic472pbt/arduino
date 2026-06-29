@@ -27,7 +27,7 @@ void Device_Protection(unsigned long currentTime, float voltageOutput){
     hvd_event = false;               //high voltage disconnect event         
     
   //FAULT DETECTION     
-  ERR = OTE || IOC || IUV || BNC;                                                                                          //Reset local error counter
+  ERR = OTE || IOC || BNC;                                                                                          //Reset local error counter
     
   if(sensors.values.getBatteryV() > sensors.values.HVD)                                      {OOV=1;ERR++;hvd_event=true;}else{OOV=0;}  //OOV - OUTPUT OVERVOLTAGE: Output voltage has reached absolute limit                     
   if(sensors.values.getBatteryV() < sensors.values.LVD){

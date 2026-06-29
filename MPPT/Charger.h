@@ -4,6 +4,7 @@
 
 #define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
 #define RESCAN_INTERVAL 299500U //  PV sensing every 5 min. Switch off PWM controler for this.
+#define TEMP_COEF_PER_CELL   -0.003         // V / °C
 
 #include "SensorsData.h"
 #include "PWM.h"
@@ -83,7 +84,7 @@ public:
           }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
             REC=0;
             //pwmController.setMinDuty(); 
-            currentState = goFloat();
+            currentState = goFloat(sensor.getRawBatteryV());
           }
     
           if(absorptionAccTime >= ABSORPTION_TIME_LIMIT && !absorbingDisabled) {
@@ -124,6 +125,7 @@ public:
       absorptionStartTime = 0;
       setAbsorbingDisabled(((millis() / 86400000UL) % 14) != 7, sensor); // once in a two weeks allow absorbing 
       isPVoffline = false;
+      tempCompensationRaw = (int)((sensor.temperature - 25.0) * sensor.getCellCount() * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR);
     }
 
     // transit the charger to the off state
@@ -144,10 +146,11 @@ public:
     }
 
     // transit to the float state
-    IState* goFloat(){
+    IState* goFloat(int initialV){
       mpptReached = 0;
       if(pwmController.isShuteddown()) 
         pwmController.resume();
+      floatInstance.setPrevV(initialV);
       return &floatInstance;
     }
 

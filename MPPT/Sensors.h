@@ -7,7 +7,6 @@
 #define SOL_V_SENSOR_FACTOR 0.04226373 // 0.06352661 // 19.23 = 455
 #define ONE_SECOND 1000ul                   // 1000 ms 
 #define TEN_SECONDS 10000ul                 // 10000 ms 
-#define TEMP_COEF_PER_CELL   -0.003         // V / °C
 
 #include "SensorsData.h"
 #include "Charger.h"
@@ -28,8 +27,8 @@ class Sensors {
     byte
       currentADCpin  = 0;
     unsigned int
-      BTS                   = 0u,        // SYSTEM PARAMETER - Raw board temperature sensor ADC value
-      TS                    = 0u;        // SYSTEM PARAMETER - Raw temperature sensor ADC value
+      BTS                   = 0u,        // Raw board temperature sensor ADC value
+      TS                    = 0u;        // Raw temperature sensor ADC value
     unsigned long 
       powerProbeTime        = 0ul,
       catchAbsTime          = 0ul,
@@ -91,29 +90,27 @@ class Sensors {
         // opdate PV voltage not in updating PV voltage state
         if(!charger.isUpdatingPV()) values.PVvoltageSmooth = IIR2(values.PVvoltageSmooth, values.PVvoltage); 
         //IUV - INPUT UNDERVOLTAGE: Input voltage is below max battery charging voltage (for charger mode only)     
-        if(values.PVvoltage + 0.5 < values.getBatteryV()) {IUV=1;REC=1;}else{IUV=0;}   
+        if(values.PVvoltage + 0.5 < values.getBatteryV()) {IUV=1; REC=1;} else{IUV=0;}   
       }
       
       if(currentADCpin == CURRENT_IN_SENSOR && ADS.isReady()){
-        values.setRawCurrentIn(ADS.getValue());
-        currentADCpin += 1;
-        ADS.setGain(1);
-        ADS.requestADC(currentADCpin);                
-        sensorsUpdated = true;
-        if(currentTime - powerProbeTime >= ONE_SECOND){
-          values.rawPowerPrev = values.getRawPower();
-          powerProbeTime = currentTime;
-        }
-        
-        IOC = values.getCurrentInput()  > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
+          if (!charger.isUpdatingPV()) {
+              values.setRawCurrentIn(ADS.getValue());
+              
+              sensorsUpdated = true;
+              if (currentTime - powerProbeTime >= ONE_SECOND) {
+                  values.rawPowerPrev = values.getRawPower();
+                  powerProbeTime = currentTime;
+              }
 
-        // update power value
-        charger.sol_watts = max(values.getBatteryV() * values.getCurrentInput(), 0.0);  // ignore negative power supply current
+              IOC = values.getCurrentInput() > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
 
-        // enable power correction bias to mitigate overproduction issue 
-       /* charger.powerCompensation = 
-          (charger.finishEqualize || !charger.stepsDown > 0) ? 0 
-          : min(39, max(0, (int)(0.5 * (charger.sol_watts - 90.0) * 0.001764706 / BAT_SENSOR_FACTOR))); */
+              // update power value
+              charger.sol_watts = max(values.getBatteryV() * values.getCurrentInput(), 0.0);  // ignore negative power supply current
+          }
+          currentADCpin += 1;
+          ADS.setGain(1);
+          ADS.requestADC(currentADCpin);
       }
       
       /////////// LOAD SENSORS /////////////
@@ -129,7 +126,6 @@ class Sensors {
     
     void SetTempCompensation(){
       values.temperature = Voltage2Temp(TS);
-      charger.tempCompensationRaw = (int)((values.temperature - 25.0) * values.getCellCount() * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR);
     }
 
     // convert raw int system temperature to float

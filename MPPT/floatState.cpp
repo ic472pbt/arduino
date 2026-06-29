@@ -2,12 +2,24 @@
 #include "floatState.h"
 #include "Charger.h"
 #include "StateFlow.h"
-constexpr auto BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL = 140; // 13.8 = 924
+constexpr auto BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL = 142; // 12.7
 
 IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) {
-    int floatVoltageUpperLimit = max(152 * sensor.getCellCount(), charger.voltageTempCompensateRaw(sensor.floatVoltageRaw));
+    int floatVoltageUpperLimit = min(sensor.maxVoltageRaw, charger.voltageTempCompensateRaw(sensor.floatVoltageRaw));
     // no temperature correction for the lower bound to trigger scan mode transition
     int floatVoltageLowerLimit = BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL * sensor.getCellCount();
+
+    int v = sensor.getRawBatteryV();
+    if (prevV == 0) {
+      prevV = v;
+      prevDv = 0;
+    }
+
+    int dv = v - prevV;
+    int da = dv - prevDv;
+
+    prevV = v;
+    prevDv = dv;
 
   /* Side effects that should run regardless of transition
   bool isAbsorbing = charger.isAbsorbing();
@@ -37,11 +49,6 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
         }
         isTestingDuty = !isTestingDuty;
     })
-    .doIf([&] { bool shouldRecoverFromOverCharge = charger.batteryAtFullCapacity && charger.pwmController.isShuteddown(); return shouldRecoverFromOverCharge; },
-      [&] {
-        charger.pwmController.slowResume();
-      }
-    )
     .thenIf([&] { bool reverseCurrentDetected = sensor.getRawCurrentIn() <= 0 && !charger.pwmController.isShuteddown(); return reverseCurrentDetected; },
       [&] {
         return charger.goOff(currentTime);
@@ -52,34 +59,63 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
         return charger.goOn();
       }
     )
-//    .doIf([&] { bool batteryOvervolageDetected = sensor.getRawBatteryV() > floatVoltageLowerLimit && !decrementEvent; return batteryOvervolageDetected; },
-//      [&] {
-//        int delta = (sensor.getRawBatteryV() - floatVoltageLowerLimit) + charger.stepsDown * 4;
-//        decrementEvent = true;
-//        charger.pwmController.incrementDuty(-delta);
-//    })
-    .doIf([&] { return sensor.getRawBatteryV() > floatVoltageUpperLimit; },
-      [&] {
-        charger.pwmController.incrementDuty(-1);
+    .thenIf([&] { return sensor.getRawBatteryV() < floatVoltageLowerLimit; },
+      [&]{
+          return charger.goScan(false);
     })
-    .doIf([&] { return sensor.getRawBatteryV() < floatVoltageUpperLimit && (charger.pwmController.duty < charger.pwmController.mpptDuty); },
+    .doIf([&] {
+        bool overLimit = v >= floatVoltageUpperLimit;
+        bool belowLimitNeedsDecrease = v < floatVoltageUpperLimit
+            && !isTestingDuty && dv > 0
+            && (currentTime % 30000UL) >= 200;
+        return overLimit || belowLimitNeedsDecrease;
+      },
+      [&] {
+        int distance = floatVoltageUpperLimit - v;
+        int predictedRise = dv + da * 2;
+        int delta = 0;
+
+        if (distance <= 0)
+        {
+            int maxVoltageLimit = charger.maxVoltageTempCorrectedRaw(sensor);
+            int overHeadroom = max(1, maxVoltageLimit - floatVoltageUpperLimit);
+            int overError = -distance;
+
+            // soft near float, stronger near maxVoltage
+            delta = 1 + (overError * 6) / overHeadroom;
+
+            // extra damping if voltage is still rising fast
+            if (predictedRise > 0) {
+                delta += min(3, predictedRise);
+            }
+
+            delta = min(delta, 12);
+        }
+        else if (predictedRise > distance)
+        {
+            delta = 10;
+        }
+        else if (predictedRise > distance / 2)
+        {
+            delta = 4;
+        }
+
+        charger.pwmController.incrementDuty(-delta);
+    })
+    .doIf([&] { return v < floatVoltageUpperLimit && (charger.pwmController.duty < charger.pwmController.mpptDuty); },
       [&] {
         charger.pwmController.incrementDuty(1);
     })
-    .doIf([&] { return sensor.getRawBatteryV() < floatVoltageUpperLimit 
-        && (charger.pwmController.duty >= charger.pwmController.mpptDuty) 
-        && !isTestingDuty
-        && (currentTime % 30000UL) < 200; },
+    .doIf([&] {
+        return v < floatVoltageUpperLimit
+            && (charger.pwmController.duty >= charger.pwmController.mpptDuty)
+            && !isTestingDuty
+            && (currentTime % 30000UL) < 200;
+      },
       [&] {
         rawPowerPrev = sensor.getRawPower();
         charger.pwmController.incrementDuty(currentTime % 2 == 0 ? 2 : -2);
         isTestingDuty = !isTestingDuty;
-    })
-    .thenIf([&] { return sensor.getRawBatteryV() < floatVoltageLowerLimit; },
-      [&]{
-          charger.stepsDown = max(0, charger.stepsDown - 1);
-          charger.batteryAtFullCapacity = false;
-          return charger.goScan(false);
     });
 
   return flow.get();

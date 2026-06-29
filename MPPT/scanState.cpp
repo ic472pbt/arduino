@@ -24,9 +24,9 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
     .thenIf([&] { return sensor.getRawBatteryV() > sensor.floatVoltageLimitRaw; }, 
       [&]{
           charger.pwmController.incrementDuty(-10);   
-          return charger.goFloat();
+          return charger.goFloat(sensor.getRawBatteryV());
       })
-    .thenIf([&]  { return cycleNum > 0; },// { return cycleNum > 18; },
+    .thenIf([&]  { return cycleNum > 0; },
       [&]{
           cycleNum = 0;
           bestDuty = (unsigned int)(1461.0 * sensor.getBatteryV() / sensor.PVvoltageFloat);

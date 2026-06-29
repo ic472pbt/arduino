@@ -3,7 +3,7 @@
 #define SENSORSDATA_H
 constexpr float FULL_BATT_VOLTS_RAW_PER_CELL = 141;   // raw value of fully charged battery voltage 12.6 
 constexpr auto MAX_BATT_VOLTS_RAW_PER_CELL = 160; // 642       // raw value of battery voltage 14.35  ;
-constexpr auto BATT_FLOAT_RAW_PER_CELL = 155; // 13.9 = 930  raw battery voltage we want to stop charging at;
+constexpr auto BATT_FLOAT_RAW_PER_CELL = 154; // 13.8 = 930  raw battery voltage we want to stop charging at;
 constexpr auto LVR_PER_CELL = 2.1;
 constexpr auto HVD_PER_CELL = 2.63;
 constexpr auto LVD_PER_CELL = 1.8;
@@ -24,6 +24,7 @@ public:
     unsigned long rawPowerPrev = 0;
     unsigned long batteryUpdateCount = 0;
 
+    float batTemperature = 0.0;
     float temperature    = 0.0;
     float currentLoad    = 0.0;
 
