@@ -13,6 +13,7 @@
 #include <ADS1X15.h>
 
 extern bool OTE, BNC, IUV, IOC, OOC;
+extern void StoreErrorsToEEPROM();
 
 class Sensors {
   private:
@@ -59,7 +60,12 @@ class Sensors {
         TS =  TSFilter.smooth(analogRead(RT2));
         BTS = BTSFilter.smooth(analogRead(RT1));
         SetTempCompensation();
+        bool prevOTE = OTE;
         OTE = boardTemperature() > MAX_BOARD_TEMPERATURE;  // overheating protection
+        // Store error if OTE just triggered
+        if(OTE && !prevOTE) {
+          StoreErrorsToEEPROM();
+        }
         lastTempTime = currentTime;
       }
 
@@ -68,7 +74,12 @@ class Sensors {
         values.setRawBatteryV(ADS.getValue()); // ADS.readADC(BAT_V_SENSOR); 
         currentADCpin += 1;
         ADS.requestADC(currentADCpin); // 10ms until read is ready        
+        bool prevBNC = BNC;
         BNC = values.getBatteryV() < MIN_SYSTEM_VOLTAGE;  //BNC - BATTERY NOT CONNECTED         
+        // Store error if BNC just triggered
+        if(BNC && !prevBNC) {
+          StoreErrorsToEEPROM();
+        }
         // If we've charged the battery above the MAX voltage 0.4V rising overpower event
         if (values.getRawBatteryV() > values.maxVoltageRaw + 27) {
           if(charger.stepsDown <= 40) charger.stepsDown += 4;
@@ -89,21 +100,30 @@ class Sensors {
         if(charger.pwmController.isShuteddown()) values.PVvoltageFloat = values.PVvoltage; 
         // opdate PV voltage not in updating PV voltage state
         if(!charger.isUpdatingPV()) values.PVvoltageSmooth = IIR2(values.PVvoltageSmooth, values.PVvoltage); 
-        //IUV - INPUT UNDERVOLTAGE: Input voltage is below max battery charging voltage (for charger mode only)     
-        if(values.PVvoltage + 0.5 < values.getBatteryV()) {IUV=1; REC=1;} else{IUV=0;}   
+
+        // IUV/REC logic: REC only on recovery edge (IUV: 1 -> 0)
+        bool wasIUV = IUV;
+        IUV = values.PVvoltage + 0.5 < values.getBatteryV();
+        if (wasIUV && !IUV) {
+          REC = 1;
+        }
       }
       
       if(currentADCpin == CURRENT_IN_SENSOR && ADS.isReady()){
           if (!charger.isUpdatingPV()) {
               values.setRawCurrentIn(ADS.getValue());
               
-              sensorsUpdated = true;
               if (currentTime - powerProbeTime >= ONE_SECOND) {
                   values.rawPowerPrev = values.getRawPower();
                   powerProbeTime = currentTime;
               }
 
+              bool prevIOC = IOC;
               IOC = values.getCurrentInput() > CURRENT_ABSOLUTE_MAX;  //IOC - INPUT  OVERCURRENT: Input current has reached absolute limit
+              // Store error if IOC just triggered
+              if(IOC && !prevIOC) {
+                StoreErrorsToEEPROM();
+              }
 
               // update power value
               charger.sol_watts = max(values.getBatteryV() * values.getCurrentInput(), 0.0);  // ignore negative power supply current
@@ -111,6 +131,7 @@ class Sensors {
           currentADCpin += 1;
           ADS.setGain(1);
           ADS.requestADC(currentADCpin);
+          sensorsUpdated = true;
       }
       
       /////////// LOAD SENSORS /////////////
@@ -119,7 +140,12 @@ class Sensors {
         currentADCpin = BAT_V_SENSOR;
         ADS.requestADC(currentADCpin);
         values.currentLoad = values.rawCurrentOut * CURRENT_OUT_FACTOR;
+        bool prevOOC = OOC;
         OOC = values.currentLoad > CURRENT_ABSOLUTE_MAX;  //OOC - OUTPUT OVERCURRENT: Output current has reached absolute limit 
+        // Store error if OOC just triggered
+        if(OOC && !prevOOC) {
+          StoreErrorsToEEPROM();
+        }
       }
 
     }

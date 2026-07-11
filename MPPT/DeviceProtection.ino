@@ -40,6 +40,11 @@ void Device_Protection(unsigned long currentTime, float voltageOutput){
     }
   }else{FLV=0; prev_lvd_event = false;}  //FLV - Fatally low system voltage (unable to resume operation)
 
+  // Store errors to EEPROM when any error is detected
+  if(ERR > 0 || OOV || FLV || OOC) {
+    StoreErrorsToEEPROM();
+  }
+
   // Load protection
   if((OOV || FLV || OOC) && load_status){
     // disconnect the load in case of deep discharge or overcharge

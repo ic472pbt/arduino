@@ -83,8 +83,11 @@ public:
             return;
           }else if (REC==1){ // wait for recovery from low solar voltage (starting a new day)
             REC=0;
-            //pwmController.setMinDuty(); 
-            currentState = goFloat(sensor.getRawBatteryV());
+            // Do not bypass off-state logic at night
+            if(!currentState->isOff()){
+              currentState = goFloat(sensor.getRawBatteryV());
+              return;
+            }
           }
     
           if(absorptionAccTime >= ABSORPTION_TIME_LIMIT && !absorbingDisabled) {

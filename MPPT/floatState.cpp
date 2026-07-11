@@ -3,11 +3,13 @@
 #include "Charger.h"
 #include "StateFlow.h"
 constexpr auto BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL = 142; // 12.7
+constexpr auto MPPT_FLOAT_TEST_PERIOD_MS = 30000UL;
+constexpr auto MPPT_FLOAT_TEST_WINDOW_MS = 200UL;
 
 IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) {
     int floatVoltageUpperLimit = min(sensor.maxVoltageRaw, charger.voltageTempCompensateRaw(sensor.floatVoltageRaw));
-    // no temperature correction for the lower bound to trigger scan mode transition
     int floatVoltageLowerLimit = BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL * sensor.getCellCount();
+    int maxVoltageLimit = charger.maxVoltageTempCorrectedRaw(sensor);
 
     int v = sensor.getRawBatteryV();
     if (prevV == 0) {
@@ -21,23 +23,8 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
     prevV = v;
     prevDv = dv;
 
-  /* Side effects that should run regardless of transition
-  bool isAbsorbing = charger.isAbsorbing();
-  if (isAbsorbing && charger.absorptionStartTime == 0) {
-      charger.absorptionStartTime = currentTime;
-  }
-  else if(isAbsorbing) {
-      long interval = currentTime - charger.absorptionStartTime;
-      if (interval > 10000) {
-        charger.absorptionAccTime += interval;
-        charger.absorptionStartTime = currentTime;
-      }    
-  } 
-  else charger.absorptionStartTime = 0;
-*/
   StateFlow<IState*> flow(this);
 
-  // first matching condition will execute
   flow
     .doIf([&] { return isTestingDuty; },
       [&] {
@@ -59,16 +46,30 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
         return charger.goOn();
       }
     )
-    .thenIf([&] { return sensor.getRawBatteryV() < floatVoltageLowerLimit; },
+    .thenIf([&] { return v < floatVoltageLowerLimit; },
       [&]{
           return charger.goScan(false);
     })
+    // Emergency brake: hard overvoltage near maxVoltage limit
+    .doIf([&] { return v > maxVoltageLimit - 20; },
+      [&] {
+        int overError = v - (maxVoltageLimit - 20);
+        int delta = 15 + overError / 2;
+        charger.pwmController.incrementDuty(-min(delta, 30));
+    })
+    // Predictive regulation at/near float
     .doIf([&] {
-        bool overLimit = v >= floatVoltageUpperLimit;
-        bool belowLimitNeedsDecrease = v < floatVoltageUpperLimit
-            && !isTestingDuty && dv > 0
-            && (currentTime % 30000UL) >= 200;
-        return overLimit || belowLimitNeedsDecrease;
+        int distance = floatVoltageUpperLimit - v;
+        int predictedRise = dv + da * 2;
+        
+        bool overLimit = distance <= 0;
+        bool approachingFast = distance > 0 
+            && distance < 50
+            && !isTestingDuty
+            && (currentTime % MPPT_FLOAT_TEST_PERIOD_MS) >= MPPT_FLOAT_TEST_WINDOW_MS
+            && predictedRise > distance / 3;  // relaxed threshold for smoother approach
+        
+        return overLimit || approachingFast;
       },
       [&] {
         int distance = floatVoltageUpperLimit - v;
@@ -77,40 +78,39 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
 
         if (distance <= 0)
         {
-            int maxVoltageLimit = charger.maxVoltageTempCorrectedRaw(sensor);
-            int overHeadroom = max(1, maxVoltageLimit - floatVoltageUpperLimit);
+            // above float: proportional response with velocity component
             int overError = -distance;
-
-            // soft near float, stronger near maxVoltage
-            delta = 1 + (overError * 6) / overHeadroom;
-
-            // extra damping if voltage is still rising fast
-            if (predictedRise > 0) {
-                delta += min(3, predictedRise);
-            }
-
-            delta = min(delta, 12);
+            delta = 2 + overError / 3 + max(0, dv) / 2;
+            delta = min(delta, 15);
         }
         else if (predictedRise > distance)
         {
-            delta = 10;
+            delta = 8;
         }
         else if (predictedRise > distance / 2)
         {
             delta = 4;
         }
+        else if (predictedRise > distance / 3)
+        {
+            delta = 2;
+        }
 
-        charger.pwmController.incrementDuty(-delta);
+        if (delta > 0) {
+            charger.pwmController.incrementDuty(-delta);
+        }
     })
+    // Ramp up toward MPPT when safely below float
     .doIf([&] { return v < floatVoltageUpperLimit && (charger.pwmController.duty < charger.pwmController.mpptDuty); },
       [&] {
         charger.pwmController.incrementDuty(1);
     })
+    // Periodic MPPT tracking test in float
     .doIf([&] {
         return v < floatVoltageUpperLimit
             && (charger.pwmController.duty >= charger.pwmController.mpptDuty)
             && !isTestingDuty
-            && (currentTime % 30000UL) < 200;
+            && (currentTime % MPPT_FLOAT_TEST_PERIOD_MS) < MPPT_FLOAT_TEST_WINDOW_MS;
       },
       [&] {
         rawPowerPrev = sensor.getRawPower();

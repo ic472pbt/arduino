@@ -4,6 +4,7 @@
 
 #define IN_CURRENT_RECALIBRATE_INTERVAL 60000  //1 minute to recalibrate the shunt resistor
 #define INFO_REPORT_INTERVAL 3000             //20 seconds between reports
+#define EEPROM_ERROR_ADDRESS 200               // EEPROM address for storing error flags
 #define COM1 2  // violet pin 3
 #define COM2 3  // violet pin 2
 #define COM3 4  // black pin 32
@@ -67,6 +68,19 @@ OUV                   = 0,           // SYSTEM PARAMETER -
 OOV                   = 0,           // SYSTEM PARAMETER - 
 OOC                   = 0,           // SYSTEM PARAMETER - 
 OTE                   = 0;           // SYSTEM PARAMETER -
+
+// Stored error flags structure for EEPROM
+struct StoredErrors {
+  byte ERR;
+  bool FLV;
+  bool BNC;
+  bool IUV;
+  bool IOC;
+  bool OOV;
+  bool OOC;
+  bool OTE;
+  bool REC;
+};
   
 unsigned long 
   prevRoutineMillis     = 0ul;
@@ -93,6 +107,31 @@ todayOutAh             = 0.0000;     // SYSTEM PARAMETER - Energy Output for tod
 
 enum button_mode {none, plus, minus, both} button_state;       // enumerated variable that holds state for buttons
 enum valueType {voltage, degree, amper, percent, power, amperHour};      // value type LCD label right indicator
+
+// Error storage functions
+void StoreErrorsToEEPROM() {
+  StoredErrors storedErrors;
+  storedErrors.ERR = ERR;
+  storedErrors.FLV = FLV;
+  storedErrors.BNC = BNC;
+  storedErrors.IUV = IUV;
+  storedErrors.IOC = IOC;
+  storedErrors.OOV = OOV;
+  storedErrors.OOC = OOC;
+  storedErrors.OTE = OTE;
+  storedErrors.REC = REC;
+  
+  EEPROM.put(EEPROM_ERROR_ADDRESS, storedErrors);
+}
+
+void ReadStoredErrors(StoredErrors &storedErrors) {
+  EEPROM.get(EEPROM_ERROR_ADDRESS, storedErrors);
+}
+
+void ClearStoredErrors() {
+  StoredErrors storedErrors = {0, false, false, false, false, false, false, false, false};
+  EEPROM.put(EEPROM_ERROR_ADDRESS, storedErrors);
+}
 
 void setup() {
   for(int i = 2; i < 14; i++){pinMode(i, OUTPUT);} 
@@ -371,11 +410,22 @@ void print_data(float solarVoltage, unsigned long currentTime){
         Serial.print(" TohAh:");    Serial.print(todayOutAh);       
         Serial.print(" Days:");  Serial.print(daysRunning);       
     }
-    else if(L=='i'){ // information request        
+    else if(L=='i'){ // information request               
+        // Read and report stored errors first
+        StoredErrors storedErrors;
+        ReadStoredErrors(storedErrors);
+
+        // Check if any errors were stored
+        bool hasErrors = (storedErrors.ERR > 0 || storedErrors.FLV || storedErrors.BNC || 
+                         storedErrors.IUV || storedErrors.IOC || storedErrors.OOV || 
+                         storedErrors.OOC || storedErrors.OTE || storedErrors.REC);
+
+
+
         float solarCurrent = charger.sol_watts/solarVoltage;
         Serial.print("Current (panel) = ");
         Serial.println(solarCurrent);
-      
+
         Serial.print("Voltage (panel) = "); Serial.println(sensors.values.PVvoltageSmooth);        
         Serial.print("Power (panel) = ");   Serial.println(charger.sol_watts);      
         Serial.print("Battery Voltage = "); Serial.println(sensors.values.getBatteryVsmooth());      
@@ -387,10 +437,27 @@ void print_data(float solarVoltage, unsigned long currentTime){
           Serial.println(0.0);
         else
           Serial.println(charger.pwmController.duty/10.23);
-        
+
         Serial.print("OUT Temp = ");    Serial.println(sensors.values.temperature);
         Serial.print("SYS Temp = ");    Serial.println(sensors.boardTemperature());
         Serial.print("PVF = ");         Serial.print(sensors.values.PVvoltageFloat);
+
+        if(hasErrors) {
+          // Report stored errors
+          Serial.print("Stored ERR:");   Serial.print(storedErrors.ERR);
+          Serial.print(" FLV:");   Serial.print(storedErrors.FLV);  
+          Serial.print(" BNC:");   Serial.print(storedErrors.BNC);  
+          Serial.print(" IUV:");   Serial.print(storedErrors.IUV); 
+          Serial.print(" IOC:");   Serial.print(storedErrors.IOC); 
+          Serial.print(" OOV:");   Serial.print(storedErrors.OOV); 
+          Serial.print(" OOC:");   Serial.print(storedErrors.OOC);
+          Serial.print(" OTE:");   Serial.print(storedErrors.OTE); 
+          Serial.print(" REC:");   Serial.print(storedErrors.REC);
+          Serial.println();
+
+          // Clear stored errors after reporting (only write to EEPROM if there were errors)
+          ClearStoredErrors();
+        }
     }
     else if(L=='s'){
       StoreHarvestingData(currentTime);
