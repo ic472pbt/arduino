@@ -128,7 +128,9 @@ public:
       absorptionStartTime = 0;
       setAbsorbingDisabled(((millis() / 86400000UL) % 14) != 7, sensor); // once in a two weeks allow absorbing 
       isPVoffline = false;
-      tempCompensationRaw = (int)((sensor.temperature - 25.0) * sensor.getCellCount() * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR);
+      tempCompensationRaw = sensor.getBatteryType() == BatteryType::LeadAcid
+        ? (int)((sensor.temperature - 25.0) * sensor.getCellCount() * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR)
+        : 0;
     }
 
     // transit the charger to the off state

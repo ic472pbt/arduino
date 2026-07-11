@@ -1,12 +1,24 @@
 ﻿#ifndef SENSORSDATA_H
 #include <Arduino.h>
 #define SENSORSDATA_H
-constexpr float FULL_BATT_VOLTS_RAW_PER_CELL = 141;   // raw value of fully charged battery voltage 12.6 
-constexpr auto MAX_BATT_VOLTS_RAW_PER_CELL = 160; // 642       // raw value of battery voltage 14.35  ;
-constexpr auto BATT_FLOAT_RAW_PER_CELL = 154; // 13.8 = 930  raw battery voltage we want to stop charging at;
-constexpr auto LVR_PER_CELL = 2.1;
-constexpr auto HVD_PER_CELL = 2.63;
-constexpr auto LVD_PER_CELL = 1.8;
+enum class BatteryType : uint8_t {
+  LeadAcid,
+  LiFePO4
+};
+
+constexpr float LEAD_ACID_FULL_BATT_VOLTS_RAW_PER_CELL = 141;
+constexpr auto LEAD_ACID_MAX_BATT_VOLTS_RAW_PER_CELL = 160;
+constexpr auto LEAD_ACID_FLOAT_RAW_PER_CELL = 154;
+constexpr auto LEAD_ACID_LVR_PER_CELL = 2.1;
+constexpr auto LEAD_ACID_HVD_PER_CELL = 2.63;
+constexpr auto LEAD_ACID_LVD_PER_CELL = 1.8;
+
+constexpr float LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL = 228;
+constexpr auto LIFEPO4_MAX_BATT_VOLTS_RAW_PER_CELL = 245;
+constexpr auto LIFEPO4_FLOAT_RAW_PER_CELL = 231;
+constexpr auto LIFEPO4_LVR_PER_CELL = 3.1;
+constexpr auto LIFEPO4_HVD_PER_CELL = 3.65;
+constexpr auto LIFEPO4_LVD_PER_CELL = 2.5;
 constexpr auto BAT_SENSOR_FACTOR = 0.01493012; // 0.02235088 19.23 = 1288;
 constexpr auto CURRENT_OFFSET = 382 ;
 constexpr auto CURRENT_IN_LOW_FACTOR = 0.009773528;
@@ -41,14 +53,35 @@ public:
 
     // ==== PUBLIC API ====
     void identifyCellCount(){
-      cellCount = (rawBatteryV > BAT_24V_THRESHOLD_RAW) ? 12 : 6;
-      floatVoltageRaw = BATT_FLOAT_RAW_PER_CELL * cellCount;
-      maxVoltageRaw = MAX_BATT_VOLTS_RAW_PER_CELL * cellCount;
+      const bool is24VSystem = rawBatteryV > BAT_24V_THRESHOLD_RAW;
+      cellCount = is24VSystem ? (batteryType == BatteryType::LeadAcid ? 12 : 8)
+                              : (batteryType == BatteryType::LeadAcid ? 6 : 4);
+
+      const int floatVoltageRawPerCell = batteryType == BatteryType::LeadAcid
+        ? LEAD_ACID_FLOAT_RAW_PER_CELL : LIFEPO4_FLOAT_RAW_PER_CELL;
+      const int maxVoltageRawPerCell = batteryType == BatteryType::LeadAcid
+        ? LEAD_ACID_MAX_BATT_VOLTS_RAW_PER_CELL : LIFEPO4_MAX_BATT_VOLTS_RAW_PER_CELL;
+      const float fullyChargedVoltageRawPerCell = batteryType == BatteryType::LeadAcid
+        ? LEAD_ACID_FULL_BATT_VOLTS_RAW_PER_CELL : LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL;
+
+      floatVoltageRaw = floatVoltageRawPerCell * cellCount;
+      maxVoltageRaw = maxVoltageRawPerCell * cellCount;
       floatVoltageLimitRaw = floatVoltageRaw;
-      fullyChargedVoltage = FULL_BATT_VOLTS_RAW_PER_CELL * cellCount * BAT_SENSOR_FACTOR;
-      LVR = LVR_PER_CELL * cellCount;
-      HVD = HVD_PER_CELL * cellCount;
-      LVD = LVD_PER_CELL * cellCount;
+      fullyChargedVoltage = fullyChargedVoltageRawPerCell * cellCount * BAT_SENSOR_FACTOR;
+      LVR = (batteryType == BatteryType::LeadAcid ? LEAD_ACID_LVR_PER_CELL : LIFEPO4_LVR_PER_CELL) * cellCount;
+      HVD = (batteryType == BatteryType::LeadAcid ? LEAD_ACID_HVD_PER_CELL : LIFEPO4_HVD_PER_CELL) * cellCount;
+      LVD = (batteryType == BatteryType::LeadAcid ? LEAD_ACID_LVD_PER_CELL : LIFEPO4_LVD_PER_CELL) * cellCount;
+    }
+
+    void setBatteryType(BatteryType type) {
+      batteryType = type;
+      if (rawBatteryV > 0) {
+        identifyCellCount();
+      }
+    }
+
+    BatteryType getBatteryType() const {
+      return batteryType;
     }
 
     uint8_t getCellCount() const {
@@ -142,6 +175,7 @@ private:
     uint8_t 
       currentGain = 2,
       cellCount;
+    BatteryType batteryType = BatteryType::LeadAcid;
     int rawBatteryV = 0;
     float batteryV       = 0.0;
     float batteryVsmooth = 0.0;

@@ -33,6 +33,8 @@
 #include "Sensors.h"
 #include <EEPROM.h>
 
+constexpr BatteryType STARTUP_BATTERY_TYPE = BatteryType::LeadAcid;
+
 IIRFilter dutyIIR(80, 120); 
 IIRFilter TSIIR(110, 128); 
 IIRFilter BTSIIR(18, 128); 
@@ -152,6 +154,7 @@ void setup() {
   ReadHarvestingData();
   charger.initializePWM(pwmPeriod);  // 25 us = 40 kHz / 17us = 60kHz / 20us = 50kHz / 33us = 30kHz
   sensors.initialize();
+  sensors.values.setBatteryType(STARTUP_BATTERY_TYPE);
   charger.minPVVoltage = sensors.values.maxVoltageRaw;
   cli(); // disable global interrupts
 
