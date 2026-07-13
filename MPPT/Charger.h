@@ -2,9 +2,9 @@
 #ifndef CHARGER_H
 #define CHARGER_H
 
-#define ABSORPTION_TIME_LIMIT 7200000L  // max 2h of topping up per day
-#define RESCAN_INTERVAL 299500U //  PV sensing every 5 min. Switch off PWM controler for this.
-#define TEMP_COEF_PER_CELL   -0.003         // V / °C
+constexpr auto ABSORPTION_TIME_LIMIT = 7200000L;  // max 2h of topping up per day;
+constexpr auto RESCAN_INTERVAL = 299500U; //  PV sensing every 5 min. Switch off PWM controler for this.;
+constexpr auto TEMP_COEF_PER_CELL = -0.003;         // V / °C;
 
 #include "SensorsData.h"
 #include "PWM.h"
@@ -115,7 +115,7 @@ public:
 
     void setAbsorbingDisabled(bool disabled, SensorsData& sensor){
       absorbingDisabled = disabled;
-      sensor.floatVoltageLimitRaw = disabled ? sensor.floatVoltageLimitRaw : sensor.maxVoltageRaw;
+      sensor.floatVoltageLimitRaw = disabled ? sensor.floatVoltageRaw : sensor.maxVoltageRaw;
 	}
 
     bool isAbsorbingDisabled() const {

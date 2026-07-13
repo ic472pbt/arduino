@@ -1,5 +1,6 @@
-﻿#ifndef SENSORSDATA_H
+#pragma once
 #include <Arduino.h>
+#ifndef SENSORSDATA_H
 #define SENSORSDATA_H
 enum class BatteryType : uint8_t {
   LeadAcid,
@@ -9,13 +10,15 @@ enum class BatteryType : uint8_t {
 constexpr float LEAD_ACID_FULL_BATT_VOLTS_RAW_PER_CELL = 141;
 constexpr auto LEAD_ACID_MAX_BATT_VOLTS_RAW_PER_CELL = 160;
 constexpr auto LEAD_ACID_FLOAT_RAW_PER_CELL = 154;
+constexpr auto LEAD_ACID_LOW_FLOAT_LIMIT_RAW_PER_CELL = 142;
 constexpr auto LEAD_ACID_LVR_PER_CELL = 2.1;
 constexpr auto LEAD_ACID_HVD_PER_CELL = 2.63;
 constexpr auto LEAD_ACID_LVD_PER_CELL = 1.8;
 
-constexpr float LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL = 228;
-constexpr auto LIFEPO4_MAX_BATT_VOLTS_RAW_PER_CELL = 245;
-constexpr auto LIFEPO4_FLOAT_RAW_PER_CELL = 231;
+constexpr float LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL = 228;   // 3.4V/cell nominally full in daily buffer operation
+constexpr auto LIFEPO4_MAX_BATT_VOLTS_RAW_PER_CELL = 243;     // 29.0V/8S topping (biweekly)
+constexpr auto LIFEPO4_FLOAT_RAW_PER_CELL = 228;              // 27.2V/8S float
+constexpr auto LIFEPO4_LOW_FLOAT_LIMIT_RAW_PER_CELL = 223;    // 26.6V/8S return to bulk
 constexpr auto LIFEPO4_LVR_PER_CELL = 3.1;
 constexpr auto LIFEPO4_HVD_PER_CELL = 3.65;
 constexpr auto LIFEPO4_LVD_PER_CELL = 2.5;
@@ -169,6 +172,12 @@ public:
 
     uint8_t getCurrentGain() const {
       return currentGain;
+    }
+
+    int getFloatLowLimitRaw() const {
+      const int lowLimitRawPerCell = batteryType == BatteryType::LeadAcid
+        ? LEAD_ACID_LOW_FLOAT_LIMIT_RAW_PER_CELL : LIFEPO4_LOW_FLOAT_LIMIT_RAW_PER_CELL;
+      return lowLimitRawPerCell * cellCount;
     }
 
 private:

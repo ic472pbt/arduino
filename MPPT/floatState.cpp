@@ -2,13 +2,12 @@
 #include "floatState.h"
 #include "Charger.h"
 #include "StateFlow.h"
-constexpr auto BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL = 142; // 12.7
 constexpr auto MPPT_FLOAT_TEST_PERIOD_MS = 30000UL;
 constexpr auto MPPT_FLOAT_TEST_WINDOW_MS = 200UL;
 
 IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long currentTime) {
     int floatVoltageUpperLimit = min(sensor.maxVoltageRaw, charger.voltageTempCompensateRaw(sensor.floatVoltageRaw));
-    int floatVoltageLowerLimit = BATT_LOW_FLOAT_LIMIT_RAW_PER_CELL * sensor.getCellCount();
+    int floatVoltageLowerLimit = sensor.getFloatLowLimitRaw();
     int maxVoltageLimit = charger.maxVoltageTempCorrectedRaw(sensor);
 
     int v = sensor.getRawBatteryV();
