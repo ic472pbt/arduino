@@ -33,7 +33,7 @@
 #include "Sensors.h"
 #include <EEPROM.h>
 
-constexpr BatteryType STARTUP_BATTERY_TYPE = BatteryType::LeadAcid;
+constexpr BatteryType STARTUP_BATTERY_TYPE = BatteryType::LiFePO4;
 
 IIRFilter dutyIIR(80, 120); 
 IIRFilter TSIIR(110, 128); 

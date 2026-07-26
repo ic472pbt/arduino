@@ -154,7 +154,7 @@ void BatteryPercent(){
   bitWrite(LCDmap[4], 1, ratio > 0.50 ? 1 : 0);
   bitWrite(LCDmap[4], 5, ratio > 0.30 ? 1 : 0);
   bitWrite(LCDmap[5], 5, ratio > 0.10 ? 1 : 0);
-  bitWrite(LCDmap[SEALED_COM], SEALED_SHIFT, 1); // SLD
+  bitWrite(LCDmap[LIPO_COM], LIPO_SHIFT, sensors.values.getBatteryType() == BatteryType::LiFePO4); // LiPo
 }
 
 void LoadStatus(){
@@ -206,8 +206,8 @@ void LCDinfo(unsigned long currentTime){
         SunStatus();
         ErrorStatus();  
         LinkStatus(currentTime);
-        bitWrite(LCDmap[LIPO_COM], LIPO_SHIFT, LCDcycling); // LiPo     
-        if(LCDcycling && !(innerCycle++ % 8)) LCDinfoCycle = (LCDinfoCycle + 1) % 5;        
+        bitWrite(LCDmap[SEALED_COM], SEALED_SHIFT, LCDcycling); // SEALED     
+        if(LCDcycling && !(innerCycle++ % 8)) LCDinfoCycle = (LCDinfoCycle + 1) % 5;
         switch(LCDinfoCycle){
           case 0:
             PrintOutRight(sensors.values.getBatteryV(), voltage);
