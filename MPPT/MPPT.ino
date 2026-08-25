@@ -24,8 +24,6 @@
 #define BAT_V_SENSOR 0          // ADS yellow
 #define SOL_V_SENSOR 1          // ADS green thiсk
 
-#define CURRENT_OUT_FACTOR 0.02044296 // 0.04114097 // 1A = 48
-
 #define SS_RAMP_DELAY 20
 
 #include "IIRFilter.h"

@@ -5,6 +5,7 @@
 #define MAX_BOARD_TEMPERATURE 60.0          // USER PARAMETER - Overtemperature, System Shudown When Exceeded (deg C)
 #define MIN_SYSTEM_VOLTAGE    10.0          //  CALIB PARAMETER - 
 #define SOL_V_SENSOR_FACTOR 0.04226373 // 0.06352661 // 19.23 = 455
+constexpr auto CURRENT_OUT_FACTOR = 0.04114097; // 0.02044296 // 1A = 48;
 #define ONE_SECOND 1000ul                   // 1000 ms 
 #define TEN_SECONDS 10000ul                 // 10000 ms 
 
