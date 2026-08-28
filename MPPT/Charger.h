@@ -126,7 +126,7 @@ public:
       // allow absorbtion
       absorptionAccTime = 0;       
       absorptionStartTime = 0;
-      setAbsorbingDisabled(((millis() / 86400000UL) % 4) != 0, sensor); // every four days allow absorbing 
+      setAbsorbingDisabled(((millis() / 86400000UL) % 14) != 7, sensor); // every 14 days, allow absorbing on day 8
       isPVoffline = false;
       tempCompensationRaw = sensor.getBatteryType() == BatteryType::LeadAcid
         ? (int)((sensor.temperature - 25.0) * sensor.getCellCount() * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR)

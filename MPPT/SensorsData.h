@@ -17,7 +17,7 @@ constexpr auto LEAD_ACID_LVD_PER_CELL = 1.8;
 
 constexpr float LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL = 228;   // 3.4V/cell nominally full in daily buffer operation
 constexpr auto LIFEPO4_MAX_BATT_VOLTS_RAW_PER_CELL = 243;     // 29.0V/8S topping (biweekly)
-constexpr auto LIFEPO4_FLOAT_RAW_PER_CELL = 228;              // 27.2V/8S float
+constexpr auto LIFEPO4_FLOAT_RAW_PER_CELL = 239;              // 28.5V/8S float
 constexpr auto LIFEPO4_LOW_FLOAT_LIMIT_RAW_PER_CELL = 223;    // 26.6V/8S return to bulk
 constexpr auto LIFEPO4_LVR_PER_CELL = 3.1;
 constexpr auto LIFEPO4_HVD_PER_CELL = 3.65;
