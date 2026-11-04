@@ -22,6 +22,17 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
     prevV = v;
     prevDv = dv;
 
+    if (waitingForFloatVoltage) {
+        if (v >= floatVoltageUpperLimit) {
+            charger.pwmController.shutdown();
+            return this;
+        }
+
+        charger.pwmController.resume();
+        waitingForFloatVoltage = false;
+        return this;
+    }
+
   StateFlow<IState*> flow(this);
 
   flow
@@ -38,11 +49,6 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
     .thenIf([&] { bool reverseCurrentDetected = sensor.getRawCurrentIn() <= 0 && !charger.pwmController.isShuteddown(); return reverseCurrentDetected; },
       [&] {
         return charger.goOff(currentTime);
-      }
-    )
-    .thenIf([&] { bool lowPowerInputDetected = charger.sol_watts <= LOW_SOL_WATTS; return lowPowerInputDetected; },
-      [&] {
-        return charger.goOn();
       }
     )
     .thenIf([&] { return v < floatVoltageLowerLimit; },

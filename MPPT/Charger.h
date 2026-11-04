@@ -166,9 +166,22 @@ public:
     // transit to the float state
     IState* goFloat(int initialV){
       mpptReached = 0;
-      if(pwmController.isShuteddown()) 
+      floatInstance.setWaitingForFloatVoltage(false);
+      if(pwmController.isShuteddown())
         pwmController.resume();
       floatInstance.setPrevV(initialV);
+      return &floatInstance;
+    }
+
+    IState* goFloat(int initialV, bool waitForFloatVoltage){
+      mpptReached = 0;
+      floatInstance.setPrevV(initialV);
+      floatInstance.setWaitingForFloatVoltage(waitForFloatVoltage);
+      if(waitForFloatVoltage){
+        pwmController.shutdown();
+      }else if(pwmController.isShuteddown()){
+        pwmController.resume();
+      }
       return &floatInstance;
     }
 

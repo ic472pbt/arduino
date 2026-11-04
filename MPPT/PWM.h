@@ -30,7 +30,9 @@ class PWM {
     PWM(IIRFilter& filterInstance) : filter(filterInstance), mpptDuty(0), duty(0) {}
         
     void shutdown(){
-      storedDuty = duty;
+      if (duty != 0) {
+        storedDuty = duty;
+      }
       setDuty();
     }
 

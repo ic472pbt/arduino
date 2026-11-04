@@ -21,6 +21,7 @@ private:
     prevDv = 0;
   bool
     isTestingDuty = false,
+    waitingForFloatVoltage = false,
     decrementEvent = false;
 public: 
     floatState() : IState("float") {}
@@ -29,5 +30,6 @@ public:
     bool isBulk() override {return false;}
     bool isOff() override {return false;}
     void setPrevV(int value) { prevV = value; }; // battery voltage when entering the state
+    void setWaitingForFloatVoltage(bool value) { waitingForFloatVoltage = value; }
 };
 #endif

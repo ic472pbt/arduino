@@ -36,7 +36,8 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
     )
     .thenIf([&] { return charger.shouldTransitionToFloat(sensor); },
       [&]{
-        return charger.goFloat(sensor.getRawBatteryV());              // battery float voltage go to the charger battery float state            
+        const bool waitForFloatVoltage = sensor.getBatteryType() == BatteryType::LiFePO4;
+        return charger.goFloat(sensor.getRawBatteryV(), waitForFloatVoltage); // battery float voltage go to the charger battery float state
       }                          
     )
     .thenIf([&] { bool shouldGoOn = (charger.mpptReached == 1) && (charger.sol_watts < LOW_SOL_WATTS); return shouldGoOn; }, 
