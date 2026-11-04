@@ -103,9 +103,20 @@ public:
 
     void Reverse() {dirrection *= -1;}  
     int floatVoltageTempCorrectedRaw(SensorsData& sensor) const { return sensor.floatVoltageLimitRaw + tempCompensationRaw; }
+    int absorptionVoltageTempCorrectedRaw(const SensorsData& sensor) const { return sensor.absorptionVoltageRaw + tempCompensationRaw; }
     int voltageTempCompensateRaw(int rawVoltagePerBattery) const { return rawVoltagePerBattery + tempCompensationRaw; }
     int maxVoltageTempCorrectedRaw(SensorsData& sensor) const { return sensor.maxVoltageRaw + tempCompensationRaw; }
-    bool isAbsorbing(SensorsData& sensor) const { return !absorbingDisabled && sensor.getRawBatteryV() > floatVoltageTempCorrectedRaw(sensor); }
+    bool shouldTransitionToFloat(SensorsData& sensor) const {
+      if (sensor.getBatteryType() == BatteryType::LiFePO4) {
+        return sensor.getRawBatteryV() >= absorptionVoltageTempCorrectedRaw(sensor);
+      }
+      return absorbingDisabled && sensor.getRawBatteryV() > floatVoltageTempCorrectedRaw(sensor);
+    }
+    bool isAbsorbing(SensorsData& sensor) const {
+      return sensor.getBatteryType() == BatteryType::LeadAcid
+        && !absorbingDisabled
+        && sensor.getRawBatteryV() >= absorptionVoltageTempCorrectedRaw(sensor);
+    }
     bool absorbtionStarted() const { return absorptionStartTime > 0; }
 
     // check if in pv updating cycle
@@ -115,7 +126,7 @@ public:
 
     void setAbsorbingDisabled(bool disabled, SensorsData& sensor){
       absorbingDisabled = disabled;
-      sensor.floatVoltageLimitRaw = disabled ? sensor.floatVoltageRaw : sensor.maxVoltageRaw;
+      sensor.floatVoltageLimitRaw = disabled ? sensor.floatVoltageRaw : sensor.absorptionVoltageRaw;
 	}
 
     bool isAbsorbingDisabled() const {
@@ -126,7 +137,9 @@ public:
       // allow absorbtion
       absorptionAccTime = 0;       
       absorptionStartTime = 0;
-      setAbsorbingDisabled(((millis() / 86400000UL) % 14) != 7, sensor); // every 14 days, allow absorbing on day 8
+      const bool disableAbsorption = sensor.getBatteryType() == BatteryType::LeadAcid
+        && ((millis() / 86400000UL) % 14) != 7;
+      setAbsorbingDisabled(disableAbsorption, sensor); // LeadAcid absorption is allowed every 14 days
       isPVoffline = false;
       tempCompensationRaw = sensor.getBatteryType() == BatteryType::LeadAcid
         ? (int)((sensor.temperature - 25.0) * sensor.getCellCount() * TEMP_COEF_PER_CELL / BAT_SENSOR_FACTOR)

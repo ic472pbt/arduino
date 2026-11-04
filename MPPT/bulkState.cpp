@@ -34,10 +34,7 @@ IState* bulkState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
         }else if((sensor.getRawBatteryV() < batteryVprevRaw - 30) && (charger.pwmController.duty < charger.pwmController.mpptDuty)) charger.pwmController.incrementDuty(1);
       }
     )
-    .thenIf([&] { 
-        int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
-        bool shouldGoFloat = sensor.getRawBatteryV() > floatV && charger.isAbsorbingDisabled(); 
-        return shouldGoFloat; },
+    .thenIf([&] { return charger.shouldTransitionToFloat(sensor); },
       [&]{
         return charger.goFloat(sensor.getRawBatteryV());              // battery float voltage go to the charger battery float state            
       }                          

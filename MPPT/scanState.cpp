@@ -21,7 +21,7 @@ IState* scanState::Handle(Charger& charger, SensorsData& sensor, unsigned long c
           charger.pwmController.resume();
           return charger.goBulk(currentTime);
       })
-    .thenIf([&] { return sensor.getRawBatteryV() > sensor.floatVoltageLimitRaw; }, 
+    .thenIf([&] { return charger.shouldTransitionToFloat(sensor); },
       [&]{
           charger.pwmController.incrementDuty(-10);   
           return charger.goFloat(sensor.getRawBatteryV());

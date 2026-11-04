@@ -9,7 +9,6 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
       StateFlow<IState*> flow(this);
        
       bool canTryToTransit = (currentTime - offTime > OFF_MIN_INTERVAL) && (sensor.PVvoltage > charger.minPVVoltage);
-      int floatV = charger.floatVoltageTempCorrectedRaw(sensor);
 
       flow
         // new charging cycle begin
@@ -21,7 +20,9 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
         )
         .thenIf(
           [&] {
-            bool canTransitToScan =  !charger.isPVoffline && (sensor.getBatteryV() > sensor.LVD) && (sensor.getRawBatteryV() < floatV);
+            bool canTransitToScan = !charger.isPVoffline
+              && (sensor.getBatteryV() > sensor.LVD)
+              && !charger.shouldTransitionToFloat(sensor);
             return canTryToTransit && canTransitToScan; 
           }, 
           [&] { 
@@ -31,7 +32,8 @@ IState* offState::Handle(Charger& charger, SensorsData& sensor, unsigned long cu
         )
         .thenIf(
           [&] { 
-            bool canTransitTofloat = charger.isAbsorbingDisabled() && (charger.batteryAtFullCapacity || (sensor.getRawBatteryV() > floatV));
+            bool canTransitTofloat = charger.shouldTransitionToFloat(sensor)
+              || (charger.isAbsorbingDisabled() && charger.batteryAtFullCapacity);
             return canTryToTransit && canTransitTofloat;
           },
           [&] { 

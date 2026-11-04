@@ -15,9 +15,9 @@ constexpr auto LEAD_ACID_LVR_PER_CELL = 2.1;
 constexpr auto LEAD_ACID_HVD_PER_CELL = 2.63;
 constexpr auto LEAD_ACID_LVD_PER_CELL = 1.8;
 
-constexpr float LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL = 228;   // 3.4V/cell nominally full in daily buffer operation
+constexpr float LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL = 228;   // 27.2V/8S nominally full in daily buffer operation
 constexpr auto LIFEPO4_MAX_BATT_VOLTS_RAW_PER_CELL = 243;     // 29.0V/8S topping (biweekly)
-constexpr auto LIFEPO4_FLOAT_RAW_PER_CELL = 239;              // 28.5V/8S float
+constexpr auto LIFEPO4_TRANSITION_VOLTAGE_RAW_PER_CELL = 239; // 28.5V/8S full charge transition to float
 constexpr auto LIFEPO4_LOW_FLOAT_LIMIT_RAW_PER_CELL = 223;    // 26.6V/8S return to bulk
 constexpr auto LIFEPO4_LVR_PER_CELL = 3.1;
 constexpr auto LIFEPO4_HVD_PER_CELL = 3.65;
@@ -33,6 +33,7 @@ public:
     // ==== PUBLIC READ-ONLY VALUES ====
     int   
         floatVoltageRaw,
+        absorptionVoltageRaw,
         maxVoltageRaw,
         rawCurrentOut = 0;
 
@@ -61,13 +62,16 @@ public:
                               : (batteryType == BatteryType::LeadAcid ? 6 : 4);
 
       const int floatVoltageRawPerCell = batteryType == BatteryType::LeadAcid
-        ? LEAD_ACID_FLOAT_RAW_PER_CELL : LIFEPO4_FLOAT_RAW_PER_CELL;
+        ? LEAD_ACID_FLOAT_RAW_PER_CELL : LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL;
+      const int absorptionVoltageRawPerCell = batteryType == BatteryType::LeadAcid
+        ? LEAD_ACID_MAX_BATT_VOLTS_RAW_PER_CELL : LIFEPO4_TRANSITION_VOLTAGE_RAW_PER_CELL;
       const int maxVoltageRawPerCell = batteryType == BatteryType::LeadAcid
         ? LEAD_ACID_MAX_BATT_VOLTS_RAW_PER_CELL : LIFEPO4_MAX_BATT_VOLTS_RAW_PER_CELL;
       const float fullyChargedVoltageRawPerCell = batteryType == BatteryType::LeadAcid
-        ? LEAD_ACID_FULL_BATT_VOLTS_RAW_PER_CELL : LIFEPO4_FULL_BATT_VOLTS_RAW_PER_CELL;
+        ? LEAD_ACID_FULL_BATT_VOLTS_RAW_PER_CELL : LIFEPO4_TRANSITION_VOLTAGE_RAW_PER_CELL;
 
       floatVoltageRaw = floatVoltageRawPerCell * cellCount;
+      absorptionVoltageRaw = absorptionVoltageRawPerCell * cellCount;
       maxVoltageRaw = maxVoltageRawPerCell * cellCount;
       floatVoltageLimitRaw = floatVoltageRaw;
       fullyChargedVoltage = fullyChargedVoltageRawPerCell * cellCount * BAT_SENSOR_FACTOR;
