@@ -5,14 +5,14 @@
 #define INVERTOR_ON PB3 
 
 #define LOW_BAT_THR 858      // 12.0V 24.0V
-#define INVERTOR_ON_THR 966  // 13.5V 27V good
+#define INVERTOR_ON_THR 970  // 13.55V 27.1V to test
 #define INVERTOR_OFF_THR 958 // 12.5V 26.4V 
 #define INVERTOR_OFF_DELTA 8 // 0.1V  0.2V 
-#define CHARGER_ON_THR 887   // 12.4V  24.8V
-#define CHARGER_OFF_THR 930  // 13.0V  26V
+#define CHARGER_ON_THR 858   // 12.0V  24.0V to test
+#define CHARGER_OFF_THR 1002  // 14.0V  28.0V to test
 
 // Timing constants
-#define BUFFER_MIN_TIME 9400      // 40 minutes
+#define BUFFER_MIN_TIME 14100          // 60 minutes
 #define OFF_INVERTOR_MIN_TIME 3500     // 15 minutes
 #define SWITCHING_DELAY 235            // 60 seconds
 
