@@ -46,7 +46,10 @@ IState* floatState::Handle(Charger& charger, SensorsData& sensor, unsigned long 
         }
         isTestingDuty = !isTestingDuty;
     })
-    .thenIf([&] { bool reverseCurrentDetected = sensor.getRawCurrentIn() <= 0 && !charger.pwmController.isShuteddown(); return reverseCurrentDetected; },
+    .thenIf([&] { 
+        bool lowSolar = sensor.PVvoltage < sensor.LVR; 
+        bool reverseCurrentDetected = sensor.getRawCurrentIn() <= 0 && !charger.pwmController.isShuteddown(); 
+        return reverseCurrentDetected || lowSolar; },
       [&] {
         return charger.goOff(currentTime);
       }
